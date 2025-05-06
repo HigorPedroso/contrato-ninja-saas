@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ChevronDown, ChevronRight, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,61 +13,86 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
+import { fetchContractTemplates } from "@/services/contracts";
+import { supabase } from "@/integrations/supabase/client";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useNavigate } from "react-router-dom";
 
-const contractTypes = [
-  {
-    value: "prestacao-servico",
-    label: "Prestação de Serviço",
-    fields: ["cliente", "descricao", "valor", "prazo", "pagamento"],
-  },
-  {
-    value: "aluguel",
-    label: "Contrato de Aluguel",
-    fields: [
-      "locatario",
-      "imovel",
-      "valor",
-      "prazo",
-      "deposito",
-      "pagamento",
-      "multa",
-    ],
-  },
-  {
-    value: "compra-venda",
-    label: "Compra e Venda",
-    fields: ["comprador", "produto", "valor", "entrega", "pagamento", "multa"],
-  },
-  {
-    value: "confidencialidade",
-    label: "Confidencialidade (NDA)",
-    fields: ["parte", "objeto", "prazo", "multa"],
-  },
-  {
-    value: "freelancer",
-    label: "Contrato para Freelancer",
-    fields: [
-      "cliente",
-      "projeto",
-      "escopo",
-      "valor",
-      "prazo",
-      "entregas",
-      "pagamento",
-      "revisoes",
-    ],
-  },
-];
+type ContractTemplate = {
+  id: string;
+  title: string;
+  description: string | null;
+  content: string;
+  template_type: string;
+  is_premium: boolean;
+};
+
+type ContractField = {
+  key: string;
+  label: string;
+  type: "text" | "textarea" | "number" | "date";
+};
+
+const getFieldsFromTemplate = (content: string): ContractField[] => {
+  const placeholderRegex = /\{([A-Z_]+)\}/g;
+  const matches = content.match(placeholderRegex) || [];
+  const uniqueFields = [...new Set(matches.map(match => match.slice(1, -1)))];
+  
+  return uniqueFields.map(field => {
+    const key = field;
+    
+    let label = field.replace(/_/g, ' ').toLowerCase();
+    label = label.charAt(0).toUpperCase() + label.slice(1);
+    
+    let type: "text" | "textarea" | "number" | "date" = "text";
+    
+    // Determine field type based on field name
+    if (field.includes("DATE")) {
+      type = "date";
+    } else if (field.includes("AMOUNT") || field.includes("PERCENTAGE") || field.includes("NUMBER")) {
+      type = "number";
+    } else if (field.includes("DESCRIPTION") || field.includes("TERMS") || field.includes("ACTIVITIES")) {
+      type = "textarea";
+    }
+    
+    return { key, label, type };
+  });
+};
 
 const ContractForm = () => {
-  const [contractType, setContractType] = useState("");
+  const [templates, setTemplates] = useState<ContractTemplate[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [selectedTemplate, setSelectedTemplate] = useState<string>("");
   const [step, setStep] = useState(1);
-  const [formData, setFormData] = useState({});
+  const [formData, setFormData] = useState<Record<string, string>>({});
+  const [contractTitle, setContractTitle] = useState("");
+  const [clientName, setClientName] = useState("");
+  const [clientEmail, setClientEmail] = useState("");
+  const [fields, setFields] = useState<ContractField[]>([]);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
-  const handleTypeChange = (value: string) => {
-    setContractType(value);
-    setFormData({});
+  useEffect(() => {
+    const loadTemplates = async () => {
+      setIsLoading(true);
+      const data = await fetchContractTemplates();
+      setTemplates(data);
+      setIsLoading(false);
+    };
+
+    loadTemplates();
+  }, []);
+
+  const handleTemplateChange = (value: string) => {
+    const template = templates.find(t => t.id === value);
+    if (template) {
+      setSelectedTemplate(value);
+      // Extract fields from template content
+      const extractedFields = getFieldsFromTemplate(template.content);
+      setFields(extractedFields);
+      // Reset form data
+      setFormData({});
+    }
   };
 
   const handleInputChange = (field: string, value: string) => {
@@ -78,66 +103,71 @@ const ContractForm = () => {
   };
 
   const handleNext = () => {
+    if (!contractTitle.trim()) {
+      toast({
+        title: "Título obrigatório",
+        description: "Por favor, forneça um título para o contrato",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setStep(2);
     window.scrollTo(0, 0);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    toast({
-      title: "Contrato gerado com sucesso!",
-      description: "Seu contrato foi gerado e está pronto para download.",
+  const generateContract = async () => {
+    const selectedTemplateObj = templates.find(t => t.id === selectedTemplate);
+    if (!selectedTemplateObj) return;
+    
+    let content = selectedTemplateObj.content;
+    
+    // Replace placeholders with form data
+    for (const [key, value] of Object.entries(formData)) {
+      content = content.replace(new RegExp(`\\{${key}\\}`, 'g'), value);
+    }
+    
+    // Get current authenticated user
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      toast({
+        title: "Erro de autenticação",
+        description: "Você precisa estar logado para criar contratos",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Insert contract
+    const { error } = await supabase.from('contracts').insert({
+      user_id: user.id,
+      template_id: selectedTemplate,
+      title: contractTitle,
+      content: content,
+      client_name: clientName,
+      client_email: clientEmail,
+      status: 'draft',
     });
-  };
-
-  const getFieldLabel = (field: string) => {
-    const labels: Record<string, string> = {
-      cliente: "Nome do Cliente",
-      locatario: "Nome do Locatário",
-      comprador: "Nome do Comprador",
-      parte: "Nome da Outra Parte",
-      descricao: "Descrição do Serviço",
-      projeto: "Nome do Projeto",
-      escopo: "Escopo do Trabalho",
-      imovel: "Endereço do Imóvel",
-      produto: "Descrição do Produto",
-      objeto: "Objeto da Confidencialidade",
-      valor: "Valor (R$)",
-      prazo: "Prazo (dias)",
-      deposito: "Valor do Depósito Caução (R$)",
-      entrega: "Prazo de Entrega (dias)",
-      pagamento: "Condições de Pagamento",
-      entregas: "Detalhes das Entregas",
-      multa: "Valor da Multa por Descumprimento (R$)",
-      revisoes: "Número de Revisões Inclusas",
-    };
-
-    return labels[field] || field;
-  };
-
-  const getFieldType = (field: string) => {
-    if (
-      field === "descricao" ||
-      field === "escopo" ||
-      field === "pagamento" ||
-      field === "entregas"
-    ) {
-      return "textarea";
+    
+    if (error) {
+      console.error("Error creating contract:", error);
+      toast({
+        title: "Erro ao criar contrato",
+        description: "Não foi possível salvar seu contrato. Tente novamente.",
+        variant: "destructive",
+      });
+      return;
     }
-    if (
-      field === "valor" ||
-      field === "prazo" ||
-      field === "deposito" ||
-      field === "entrega" ||
-      field === "multa" ||
-      field === "revisoes"
-    ) {
-      return "number";
-    }
-    return "text";
+    
+    toast({
+      title: "Contrato criado com sucesso!",
+      description: "Seu contrato foi salvo e está disponível para download.",
+    });
+    
+    // Redirect to contracts page
+    navigate("/dashboard/contratos");
   };
-
-  const selectedContract = contractTypes.find((c) => c.value === contractType);
 
   return (
     <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
@@ -151,55 +181,113 @@ const ContractForm = () => {
       {step === 1 ? (
         <div className="p-6">
           <div className="mb-6">
-            <Label htmlFor="contract-type" className="text-base mb-2 block">
-              Selecione o tipo de contrato
+            <Label htmlFor="contract-title" className="text-base mb-2 block">
+              Título do contrato
             </Label>
-            <Select onValueChange={handleTypeChange} value={contractType}>
-              <SelectTrigger id="contract-type" className="w-full">
-                <SelectValue placeholder="Selecione um tipo de contrato" />
-              </SelectTrigger>
-              <SelectContent>
-                {contractTypes.map((type) => (
-                  <SelectItem key={type.value} value={type.value}>
-                    {type.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Input 
+              id="contract-title" 
+              className="w-full" 
+              placeholder="Ex: Contrato de design para Website da Empresa XYZ"
+              value={contractTitle}
+              onChange={(e) => setContractTitle(e.target.value)}
+            />
           </div>
 
-          {contractType && (
+          <div className="mb-6">
+            <Label htmlFor="client-name" className="text-base mb-2 block">
+              Nome do cliente
+            </Label>
+            <Input 
+              id="client-name" 
+              className="w-full" 
+              placeholder="Nome completo ou razão social"
+              value={clientName}
+              onChange={(e) => setClientName(e.target.value)}
+            />
+          </div>
+
+          <div className="mb-6">
+            <Label htmlFor="client-email" className="text-base mb-2 block">
+              Email do cliente
+            </Label>
+            <Input 
+              id="client-email" 
+              type="email"
+              className="w-full" 
+              placeholder="email@exemplo.com"
+              value={clientEmail}
+              onChange={(e) => setClientEmail(e.target.value)}
+            />
+          </div>
+
+          <div className="mb-6">
+            <Label htmlFor="contract-type" className="text-base mb-2 block">
+              Selecione o modelo de contrato
+            </Label>
+            {isLoading ? (
+              <Skeleton className="h-10 w-full" />
+            ) : (
+              <Select onValueChange={handleTemplateChange} value={selectedTemplate}>
+                <SelectTrigger id="contract-type" className="w-full">
+                  <SelectValue placeholder="Selecione um modelo de contrato" />
+                </SelectTrigger>
+                <SelectContent>
+                  {templates.map((template) => (
+                    <SelectItem key={template.id} value={template.id}>
+                      {template.title}
+                      {template.is_premium && " (Premium)"}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          </div>
+
+          {selectedTemplate && (
             <>
               <div className="mb-6">
                 <h3 className="text-lg font-medium mb-4">
-                  {selectedContract?.label}
+                  Informações específicas do contrato
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {selectedContract?.fields.map((field) =>
-                    getFieldType(field) === "textarea" ? (
-                      <div key={field} className="md:col-span-2">
-                        <Label htmlFor={field} className="mb-2 block">
-                          {getFieldLabel(field)}
+                  {fields.map((field) =>
+                    field.type === "textarea" ? (
+                      <div key={field.key} className="md:col-span-2">
+                        <Label htmlFor={field.key} className="mb-2 block">
+                          {field.label}
                         </Label>
                         <Textarea
-                          id={field}
+                          id={field.key}
                           className="resize-none"
                           rows={4}
                           onChange={(e) =>
-                            handleInputChange(field, e.target.value)
+                            handleInputChange(field.key, e.target.value)
+                          }
+                        />
+                      </div>
+                    ) : field.type === "date" ? (
+                      <div key={field.key}>
+                        <Label htmlFor={field.key} className="mb-2 block">
+                          {field.label}
+                        </Label>
+                        <Input
+                          id={field.key}
+                          type="date"
+                          onChange={(e) =>
+                            handleInputChange(field.key, e.target.value)
                           }
                         />
                       </div>
                     ) : (
-                      <div key={field}>
-                        <Label htmlFor={field} className="mb-2 block">
-                          {getFieldLabel(field)}
+                      <div key={field.key}>
+                        <Label htmlFor={field.key} className="mb-2 block">
+                          {field.label}
                         </Label>
                         <Input
-                          id={field}
-                          type={getFieldType(field)}
+                          id={field.key}
+                          type={field.type}
                           onChange={(e) =>
-                            handleInputChange(field, e.target.value)
+                            handleInputChange(field.key, e.target.value)
                           }
                         />
                       </div>
@@ -229,17 +317,51 @@ const ContractForm = () => {
 
           <div className="bg-gray-50 border border-gray-100 rounded-lg p-6 mb-8">
             <h3 className="text-lg font-medium mb-4">Revise os dados</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-y-4 gap-x-8">
-              {selectedContract?.fields.map((field) => (
-                <div key={field} className="flex">
-                  <span className="font-medium mr-2 text-gray-700">
-                    {getFieldLabel(field)}:
-                  </span>
-                  <span className="text-gray-600">
-                    {(formData as any)[field] || "-"}
-                  </span>
-                </div>
-              ))}
+            
+            <div className="mb-4">
+              <span className="font-medium mr-2 text-gray-700">
+                Título do contrato:
+              </span>
+              <span className="text-gray-600">{contractTitle}</span>
+            </div>
+            
+            <div className="mb-4">
+              <span className="font-medium mr-2 text-gray-700">
+                Cliente:
+              </span>
+              <span className="text-gray-600">{clientName || "-"}</span>
+            </div>
+            
+            <div className="mb-4">
+              <span className="font-medium mr-2 text-gray-700">
+                Email do cliente:
+              </span>
+              <span className="text-gray-600">{clientEmail || "-"}</span>
+            </div>
+            
+            <div className="mb-4">
+              <span className="font-medium mr-2 text-gray-700">
+                Modelo de contrato:
+              </span>
+              <span className="text-gray-600">
+                {templates.find(t => t.id === selectedTemplate)?.title || "-"}
+              </span>
+            </div>
+            
+            <div className="mt-6">
+              <h4 className="font-medium text-gray-700 mb-2">Informações específicas:</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-y-4 gap-x-8">
+                {fields.map((field) => (
+                  <div key={field.key} className="flex">
+                    <span className="font-medium mr-2 text-gray-700">
+                      {field.label}:
+                    </span>
+                    <span className="text-gray-600">
+                      {formData[field.key] || "-"}
+                    </span>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
 
@@ -249,9 +371,9 @@ const ContractForm = () => {
             </Button>
             <Button
               className="bg-brand-400 hover:bg-brand-500"
-              onClick={handleSubmit}
+              onClick={generateContract}
             >
-              <FileText className="mr-2 h-4 w-4" /> Gerar Contrato PDF
+              <FileText className="mr-2 h-4 w-4" /> Gerar Contrato
             </Button>
           </div>
         </div>
