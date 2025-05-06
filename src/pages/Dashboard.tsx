@@ -1,4 +1,5 @@
 
+import { useEffect, useState } from "react";
 import Sidebar from "@/components/dashboard/Sidebar";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import DashboardStats from "@/components/dashboard/DashboardStats";
@@ -7,8 +8,44 @@ import ContractsList from "@/components/dashboard/ContractsList";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 
 const Dashboard = () => {
+  const { user } = useAuth();
+  const [profile, setProfile] = useState<any>(null);
+
+  useEffect(() => {
+    const getProfile = async () => {
+      if (!user) return;
+
+      try {
+        const { data, error } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("id", user.id)
+          .single();
+
+        if (error) {
+          console.error("Error fetching profile:", error);
+          return;
+        }
+
+        setProfile(data);
+      } catch (error) {
+        console.error("Unexpected error:", error);
+      }
+    };
+
+    getProfile();
+  }, [user]);
+
+  const getUserName = () => {
+    if (profile?.full_name) return profile.full_name.split(' ')[0];
+    if (user?.user_metadata?.full_name) return user.user_metadata.full_name.split(' ')[0];
+    return "usuário";
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 flex">
       <Sidebar />
@@ -16,7 +53,7 @@ const Dashboard = () => {
       <div className="flex-1 lg:ml-64">
         <DashboardHeader 
           title="Dashboard" 
-          description="Bem-vindo de volta, Maria!" 
+          description={`Bem-vindo de volta, ${getUserName()}!`} 
         />
         
         <main className="container mx-auto px-6 py-8">

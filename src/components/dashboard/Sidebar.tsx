@@ -1,165 +1,176 @@
-
 import { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, NavLink, useLocation } from "react-router-dom";
+import { Home, FileText, Plus, Users, Settings, LogOut } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
-  FileText,
-  Plus,
-  Home,
-  BookOpen,
-  Settings,
-  HelpCircle,
-  LogOut,
-  Menu,
-  X,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
-
-interface SidebarLink {
-  name: string;
-  href: string;
-  icon: React.ReactNode;
-}
-
-const links: SidebarLink[] = [
-  {
-    name: "Dashboard",
-    href: "/dashboard",
-    icon: <Home className="h-5 w-5" />,
-  },
-  {
-    name: "Meus Contratos",
-    href: "/dashboard/contratos",
-    icon: <FileText className="h-5 w-5" />,
-  },
-  {
-    name: "Criar Contrato",
-    href: "/dashboard/criar-contrato",
-    icon: <Plus className="h-5 w-5" />,
-  },
-  {
-    name: "Modelos Salvos",
-    href: "/dashboard/modelos",
-    icon: <BookOpen className="h-5 w-5" />,
-  },
-  {
-    name: "Configurações",
-    href: "/dashboard/configuracoes",
-    icon: <Settings className="h-5 w-5" />,
-  },
-  {
-    name: "Suporte",
-    href: "/dashboard/suporte",
-    icon: <HelpCircle className="h-5 w-5" />,
-  },
-];
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Sidebar = () => {
-  const location = useLocation();
-  const [isOpen, setIsOpen] = useState(false);
+  const { signOut } = useAuth();
+  
+  const handleLogout = async () => {
+    await signOut();
+    window.location.href = "/";
+  };
 
-  const toggleSidebar = () => {
-    setIsOpen(!isOpen);
+  const location = useLocation();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  const toggleMenu = () => {
+    setIsMenuOpen(!isMenuOpen);
+  };
+
+  const closeMenu = () => {
+    setIsMenuOpen(false);
   };
 
   return (
-    <>
-      {/* Mobile Sidebar Toggle */}
-      <div className="lg:hidden fixed top-4 left-4 z-50">
-        <Button
-          variant="outline"
-          size="icon"
-          className="rounded-full"
-          onClick={toggleSidebar}
+    <div className="lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-64 lg:flex-col bg-white border-r border-gray-200">
+      {/* Branding */}
+      <div className="flex items-center justify-between px-6 py-4">
+        <Link to="/dashboard" className="flex items-center space-x-2">
+          <span className="font-bold text-xl">
+            <span className="text-brand-400">Contrato</span>Flash
+          </span>
+        </Link>
+        <button
+          className="lg:hidden text-gray-500 hover:text-gray-700"
+          onClick={toggleMenu}
         >
-          <Menu className="h-5 w-5" />
-        </Button>
+          {isMenuOpen ? (
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-6 w-6"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
+          ) : (
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-6 w-6"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M4 6h16M4 12h16M4 18h16"
+              />
+            </svg>
+          )}
+        </button>
       </div>
 
-      {/* Overlay */}
-      {isOpen && (
-        <div
-          className="lg:hidden fixed inset-0 bg-black/50 z-40"
-          onClick={toggleSidebar}
-        ></div>
-      )}
-
-      {/* Sidebar */}
-      <aside
-        className={cn(
-          "fixed top-0 left-0 z-50 h-full bg-white border-r border-gray-200 w-64 transition-transform duration-300 ease-in-out transform lg:translate-x-0",
-          isOpen ? "translate-x-0" : "-translate-x-full"
-        )}
+      {/* Sidebar Content */}
+      <nav
+        className={`px-6 pb-4 flex-grow lg:block ${isMenuOpen ? "block" : "hidden"
+          }`}
       >
-        <div className="flex flex-col h-full">
-          {/* Mobile Close Button */}
-          <div className="lg:hidden absolute top-4 right-4">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
-              onClick={toggleSidebar}
+        <ul className="space-y-2">
+          <li>
+            <NavLink
+              to="/dashboard"
+              className={({ isActive }) =>
+                `flex items-center space-x-3 py-2 px-4 rounded-lg transition duration-200 ${isActive
+                  ? "bg-gray-100 text-brand-500 font-medium"
+                  : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
+                }`
+              }
+              onClick={closeMenu}
             >
-              <X className="h-5 w-5" />
-            </Button>
-          </div>
+              <Home className="h-4 w-4" />
+              <span>Dashboard</span>
+            </NavLink>
+          </li>
+          <li>
+            <NavLink
+              to="/dashboard/contratos"
+              className={({ isActive }) =>
+                `flex items-center space-x-3 py-2 px-4 rounded-lg transition duration-200 ${isActive
+                  ? "bg-gray-100 text-brand-500 font-medium"
+                  : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
+                }`
+              }
+              onClick={closeMenu}
+            >
+              <FileText className="h-4 w-4" />
+              <span>Meus Contratos</span>
+            </NavLink>
+          </li>
+          <li>
+            <NavLink
+              to="/dashboard/criar-contrato"
+              className={({ isActive }) =>
+                `flex items-center space-x-3 py-2 px-4 rounded-lg transition duration-200 ${isActive
+                  ? "bg-gray-100 text-brand-500 font-medium"
+                  : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
+                }`
+              }
+              onClick={closeMenu}
+            >
+              <Plus className="h-4 w-4" />
+              <span>Criar Contrato</span>
+            </NavLink>
+          </li>
+          <li>
+            <NavLink
+              to="/usuarios"
+              className={({ isActive }) =>
+                `flex items-center space-x-3 py-2 px-4 rounded-lg transition duration-200 ${isActive
+                  ? "bg-gray-100 text-brand-500 font-medium"
+                  : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
+                }`
+              }
+              onClick={closeMenu}
+            >
+              <Users className="h-4 w-4" />
+              <span>Usuários</span>
+            </NavLink>
+          </li>
+          <li>
+            <NavLink
+              to="/configuracoes"
+              className={({ isActive }) =>
+                `flex items-center space-x-3 py-2 px-4 rounded-lg transition duration-200 ${isActive
+                  ? "bg-gray-100 text-brand-500 font-medium"
+                  : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
+                }`
+              }
+              onClick={closeMenu}
+            >
+              <Settings className="h-4 w-4" />
+              <span>Configurações</span>
+            </NavLink>
+          </li>
+        </ul>
 
-          {/* Logo */}
-          <div className="p-6 border-b border-gray-100">
-            <Link to="/" className="flex items-center">
-              <span className="font-bold text-lg">
-                <span className="text-brand-400">Contrato</span>Flash
-              </span>
-            </Link>
-          </div>
-
-          {/* Nav Links */}
-          <nav className="flex-1 py-6 px-3 overflow-y-auto">
-            <ul className="space-y-1">
-              {links.map((link) => (
-                <li key={link.name}>
-                  <Link
-                    to={link.href}
-                    className={cn(
-                      "flex items-center px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
-                      location.pathname === link.href
-                        ? "bg-brand-50 text-brand-500"
-                        : "text-gray-700 hover:bg-gray-100"
-                    )}
-                    onClick={() => setIsOpen(false)}
-                  >
-                    <span className="mr-3">{link.icon}</span>
-                    {link.name}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </nav>
-
-          {/* User Section */}
-          <div className="p-4 border-t border-gray-100">
-            <div className="flex items-center">
-              <div className="w-10 h-10 rounded-full bg-brand-100 flex items-center justify-center text-brand-500 font-medium mr-3">
-                MS
-              </div>
-              <div>
-                <p className="font-medium text-sm">Maria Silva</p>
-                <p className="text-gray-500 text-xs">Plano Gratuito</p>
-              </div>
-            </div>
-            <Link to="/logout">
-              <Button
-                variant="ghost"
-                className="w-full mt-4 justify-start text-gray-700"
-              >
-                <LogOut className="h-4 w-4 mr-2" />
-                Sair
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </aside>
-    </>
+        {/* Logout Button */}
+        <button
+          onClick={handleLogout}
+          className="flex items-center space-x-3 py-2 px-4 rounded-lg transition duration-200 text-gray-700 hover:bg-gray-50 hover:text-gray-900 w-full mt-auto"
+        >
+          <LogOut className="h-4 w-4" />
+          <span>Sair</span>
+        </button>
+      </nav>
+    </div>
   );
 };
 

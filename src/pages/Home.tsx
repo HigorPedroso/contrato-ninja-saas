@@ -1,4 +1,3 @@
-
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
@@ -9,8 +8,11 @@ import Features from "@/components/Features";
 import Testimonials from "@/components/Testimonials";
 import PricingPlans from "@/components/PricingPlans";
 import CtaSection from "@/components/CtaSection";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Home = () => {
+  const { user } = useAuth();
+  
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
@@ -27,7 +29,7 @@ const Home = () => {
                 Crie contratos personalizados sem precisar contratar advogados caros. Simples, rápido e seguro para freelancers e pequenas empresas.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
-                <Link to="/registro">
+                <Link to={user ? "/dashboard" : "/login"}>
                   <Button className="bg-brand-400 hover:bg-brand-500 text-white text-lg px-8 py-6 h-auto w-full sm:w-auto">
                     Crie seu contrato agora
                     <ArrowRight className="ml-2 h-5 w-5" />

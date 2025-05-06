@@ -1,14 +1,30 @@
 
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { X, Menu } from "lucide-react";
+import { X, Menu, User } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
 
   const toggleMenu = () => {
     setIsOpen(!isOpen);
+  };
+
+  const handleLogout = async () => {
+    await signOut();
+    navigate("/");
   };
 
   return (
@@ -38,16 +54,52 @@ const Navbar = () => {
           </div>
 
           <div className="flex items-center space-x-4">
-            <Link to="/login">
-              <Button variant="outline" className="font-medium">
-                Entrar
-              </Button>
-            </Link>
-            <Link to="/registro">
-              <Button className="bg-brand-400 hover:bg-brand-500 text-white font-medium">
-                Criar Conta
-              </Button>
-            </Link>
+            {user ? (
+              <>
+                <Link to="/dashboard">
+                  <Button variant="outline" className="font-medium">
+                    Dashboard
+                  </Button>
+                </Link>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="rounded-full">
+                      <User size={18} />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuLabel>Minha Conta</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem asChild>
+                      <Link to="/dashboard">Dashboard</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link to="/dashboard/contratos">Meus Contratos</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link to="/dashboard/criar-contrato">Criar Contrato</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={handleLogout} className="text-red-500">
+                      Sair
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </>
+            ) : (
+              <>
+                <Link to="/login">
+                  <Button variant="outline" className="font-medium">
+                    Entrar
+                  </Button>
+                </Link>
+                <Link to="/registro">
+                  <Button className="bg-brand-400 hover:bg-brand-500 text-white font-medium">
+                    Criar Conta
+                  </Button>
+                </Link>
+              </>
+            )}
           </div>
         </div>
 
@@ -92,17 +144,45 @@ const Navbar = () => {
             >
               Sobre
             </Link>
+            
             <div className="flex flex-col space-y-3 pt-3 border-t border-gray-100">
-              <Link to="/login" onClick={toggleMenu}>
-                <Button variant="outline" className="w-full font-medium">
-                  Entrar
-                </Button>
-              </Link>
-              <Link to="/registro" onClick={toggleMenu}>
-                <Button className="w-full bg-brand-400 hover:bg-brand-500 text-white font-medium">
-                  Criar Conta
-                </Button>
-              </Link>
+              {user ? (
+                <>
+                  <Link to="/dashboard" onClick={toggleMenu}>
+                    <Button className="w-full font-medium bg-brand-400 hover:bg-brand-500">
+                      Dashboard
+                    </Button>
+                  </Link>
+                  <Link to="/dashboard/criar-contrato" onClick={toggleMenu}>
+                    <Button variant="outline" className="w-full font-medium">
+                      Criar Contrato
+                    </Button>
+                  </Link>
+                  <Button 
+                    variant="ghost" 
+                    className="w-full font-medium text-red-500 justify-start"
+                    onClick={() => {
+                      handleLogout();
+                      toggleMenu();
+                    }}
+                  >
+                    Sair
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Link to="/login" onClick={toggleMenu}>
+                    <Button variant="outline" className="w-full font-medium">
+                      Entrar
+                    </Button>
+                  </Link>
+                  <Link to="/registro" onClick={toggleMenu}>
+                    <Button className="w-full bg-brand-400 hover:bg-brand-500 text-white font-medium">
+                      Criar Conta
+                    </Button>
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         </div>

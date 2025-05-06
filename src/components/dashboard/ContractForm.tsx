@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { ChevronDown, ChevronRight, FileText } from "lucide-react";
+import { ChevronDown, ChevronRight, FileText, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,6 +17,8 @@ import { fetchContractTemplates } from "@/services/contracts";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import jsPDF from "jspdf";
 
 type ContractTemplate = {
   id: string;
@@ -69,8 +71,10 @@ const ContractForm = () => {
   const [clientName, setClientName] = useState("");
   const [clientEmail, setClientEmail] = useState("");
   const [fields, setFields] = useState<ContractField[]>([]);
+  const [generatedContent, setGeneratedContent] = useState("");
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   useEffect(() => {
     const loadTemplates = async () => {
@@ -112,11 +116,6 @@ const ContractForm = () => {
       return;
     }
 
-    setStep(2);
-    window.scrollTo(0, 0);
-  };
-
-  const generateContract = async () => {
     const selectedTemplateObj = templates.find(t => t.id === selectedTemplate);
     if (!selectedTemplateObj) return;
     
@@ -126,10 +125,13 @@ const ContractForm = () => {
     for (const [key, value] of Object.entries(formData)) {
       content = content.replace(new RegExp(`\\{${key}\\}`, 'g'), value);
     }
-    
-    // Get current authenticated user
-    const { data: { user } } = await supabase.auth.getUser();
-    
+
+    setGeneratedContent(content);
+    setStep(2);
+    window.scrollTo(0, 0);
+  };
+
+  const generateContract = async () => {
     if (!user) {
       toast({
         title: "Erro de autenticação",
@@ -139,34 +141,82 @@ const ContractForm = () => {
       return;
     }
     
-    // Insert contract
-    const { error } = await supabase.from('contracts').insert({
-      user_id: user.id,
-      template_id: selectedTemplate,
-      title: contractTitle,
-      content: content,
-      client_name: clientName,
-      client_email: clientEmail,
-      status: 'draft',
-    });
-    
-    if (error) {
+    try {
+      // Insert contract into database
+      const { error } = await supabase.from('contracts').insert({
+        user_id: user.id,
+        template_id: selectedTemplate,
+        title: contractTitle,
+        content: generatedContent,
+        client_name: clientName,
+        client_email: clientEmail,
+        status: 'draft',
+      });
+      
+      if (error) {
+        console.error("Error creating contract:", error);
+        throw error;
+      }
+      
+      toast({
+        title: "Contrato criado com sucesso!",
+        description: "Seu contrato foi salvo e está disponível para download.",
+      });
+      
+      // Redirect to contracts page
+      navigate("/dashboard/contratos");
+    } catch (error: any) {
       console.error("Error creating contract:", error);
       toast({
         title: "Erro ao criar contrato",
-        description: "Não foi possível salvar seu contrato. Tente novamente.",
+        description: error.message || "Não foi possível salvar seu contrato. Tente novamente.",
         variant: "destructive",
       });
-      return;
     }
-    
-    toast({
-      title: "Contrato criado com sucesso!",
-      description: "Seu contrato foi salvo e está disponível para download.",
-    });
-    
-    // Redirect to contracts page
-    navigate("/dashboard/contratos");
+  };
+
+  const downloadContractAsPDF = () => {
+    try {
+      const doc = new jsPDF();
+      
+      // Add title
+      doc.setFontSize(20);
+      doc.setFont("helvetica", "bold");
+      doc.text(contractTitle, 20, 20);
+      
+      // Add content
+      doc.setFontSize(12);
+      doc.setFont("helvetica", "normal");
+      
+      // Split text into lines to fit page width
+      const splitText = doc.splitTextToSize(generatedContent, 170);
+      doc.text(splitText, 20, 40);
+      
+      // Generate a filename based on contract title and client name
+      let filename = "contrato";
+      if (clientName) {
+        // Remove special characters and replace spaces with hyphens
+        const clientNameNormalized = clientName.normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+          .replace(/[^\w\s-]/g, "").trim().toLowerCase().replace(/\s+/g, "-");
+        filename += `-${clientNameNormalized}`;
+      }
+      filename += ".pdf";
+      
+      // Save the PDF
+      doc.save(filename);
+      
+      toast({
+        title: "PDF gerado com sucesso",
+        description: "Seu contrato foi baixado como PDF.",
+      });
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      toast({
+        title: "Erro ao gerar PDF",
+        description: "Não foi possível gerar o PDF. Tente novamente.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -365,16 +415,36 @@ const ContractForm = () => {
             </div>
           </div>
 
-          <div className="flex justify-between">
+          <div className="border p-4 rounded-lg my-8 whitespace-pre-wrap bg-white">
+            <h3 className="text-lg font-medium mb-4">Visualização do Contrato</h3>
+            <div className="prose prose-sm max-w-none">
+              {generatedContent.split('\n').map((line, index) => (
+                <p key={index} className="mb-2">
+                  {line}
+                </p>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex flex-wrap gap-4 justify-between">
             <Button variant="outline" onClick={() => setStep(1)}>
               Editar Informações
             </Button>
-            <Button
-              className="bg-brand-400 hover:bg-brand-500"
-              onClick={generateContract}
-            >
-              <FileText className="mr-2 h-4 w-4" /> Gerar Contrato
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                className="border-brand-400 text-brand-400 hover:bg-brand-50"
+                onClick={downloadContractAsPDF}
+              >
+                <Download className="mr-2 h-4 w-4" /> Baixar PDF
+              </Button>
+              <Button
+                className="bg-brand-400 hover:bg-brand-500"
+                onClick={generateContract}
+              >
+                <FileText className="mr-2 h-4 w-4" /> Salvar Contrato
+              </Button>
+            </div>
           </div>
         </div>
       )}
