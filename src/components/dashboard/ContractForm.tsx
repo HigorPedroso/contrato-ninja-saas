@@ -184,13 +184,30 @@ const ContractForm = () => {
       doc.setFont("helvetica", "bold");
       doc.text(contractTitle, 20, 20);
       
-      // Add content
+      // Add client information if available
+      if (clientName) {
+        doc.setFontSize(14);
+        doc.setFont("helvetica", "normal");
+        doc.text(`Cliente: ${clientName}`, 20, 35);
+        
+        if (clientEmail) {
+          doc.text(`Email: ${clientEmail}`, 20, 42);
+        }
+      }
+      
+      // Add content with proper spacing
       doc.setFontSize(12);
       doc.setFont("helvetica", "normal");
       
       // Split text into lines to fit page width
       const splitText = doc.splitTextToSize(generatedContent, 170);
-      doc.text(splitText, 20, 40);
+      doc.text(splitText, 20, clientName ? 55 : 40);
+      
+      // Add footer with date
+      const today = new Date();
+      const dateStr = today.toLocaleDateString('pt-BR');
+      doc.setFontSize(10);
+      doc.text(`Documento gerado em: ${dateStr} via ContratoFlash`, 20, doc.internal.pageSize.height - 10);
       
       // Generate a filename based on contract title and client name
       let filename = "contrato";

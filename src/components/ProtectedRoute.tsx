@@ -1,9 +1,10 @@
 
-import { Navigate, Outlet } from "react-router-dom";
+import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 
 const ProtectedRoute = () => {
   const { user, loading } = useAuth();
+  const location = useLocation();
 
   // Show loading state while checking authentication
   if (loading) {
@@ -16,7 +17,8 @@ const ProtectedRoute = () => {
 
   // Redirect to login if not authenticated
   if (!user) {
-    return <Navigate to="/login" replace />;
+    // Save the attempted URL for redirection after login
+    return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
   // Render the protected route
