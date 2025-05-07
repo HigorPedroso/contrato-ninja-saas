@@ -1,89 +1,77 @@
 
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
 
-/**
- * Adiciona uma nova notificação para o usuário
- * @param userId ID do usuário para quem a notificação será enviada
- * @param title Título da notificação
- * @param message Conteúdo da notificação
- * @returns Resultado da operação
- */
-export const addNotification = async (
-  userId: string,
-  title: string,
-  message: string
-) => {
+export interface Notification {
+  id: string;
+  user_id: string;
+  title: string;
+  message: string;
+  read: boolean;
+  created_at: string;
+}
+
+export async function fetchUserNotifications() {
   try {
-    const { data, error } = await supabase.from('notifications').insert({
-      user_id: userId,
-      title,
-      message,
-      read: false
+    const { data: userData, error: userError } = await supabase.auth.getUser();
+    if (userError || !userData.user) {
+      throw new Error("Usuário não autenticado");
+    }
+
+    const { data, error } = await supabase.rpc('get_user_notifications', {
+      user_id: userData.user.id
     });
-    
-    if (error) {
-      throw error;
-    }
-    
-    return { success: true, data };
-  } catch (error) {
-    console.error('Erro ao adicionar notificação:', error);
-    return { success: false, error };
-  }
-};
 
-/**
- * Verifica se o usuário possui notificações não lidas
- * @param userId ID do usuário
- * @returns Booleano indicando se há notificações não lidas
- */
-export const hasUnreadNotifications = async (userId: string): Promise<boolean> => {
-  try {
-    const { data, error } = await supabase.rpc('check_unread_notifications', { user_id: userId });
-    
     if (error) {
-      // Fallback para busca direta
-      const { data: notificationsData, error: notificationsError } = await supabase
-        .from('notifications')
-        .select('id')
-        .eq('user_id', userId)
-        .eq('read', false)
-        .limit(1);
-      
-      if (notificationsError) {
-        throw notificationsError;
-      }
-      
-      return notificationsData && notificationsData.length > 0;
+      console.error("Erro ao buscar notificações:", error);
+      return [];
     }
-    
-    return data > 0;
+
+    return data as Notification[];
   } catch (error) {
-    console.error('Erro ao verificar notificações não lidas:', error);
+    console.error("Erro inesperado ao buscar notificações:", error);
+    return [];
+  }
+}
+
+export async function markNotificationAsRead(notificationId: string) {
+  try {
+    const { error } = await supabase
+      .from("notifications")
+      .update({ read: true })
+      .eq("id", notificationId);
+
+    if (error) {
+      console.error("Erro ao marcar notificação como lida:", error);
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error("Erro inesperado ao atualizar notificação:", error);
     return false;
   }
-};
+}
 
-/**
- * Marca todas as notificações do usuário como lidas
- * @param userId ID do usuário
- * @returns Resultado da operação
- */
-export const markAllNotificationsAsRead = async (userId: string) => {
+export async function checkHasUnreadNotifications() {
   try {
-    const { data, error } = await supabase
-      .from('notifications')
-      .update({ read: true })
-      .eq('user_id', userId)
-      .eq('read', false);
-    
-    if (error) {
-      throw error;
+    const { data: userData, error: userError } = await supabase.auth.getUser();
+    if (userError || !userData.user) {
+      return false;
     }
-    
-    return { success: true, data };
+
+    const { data, error } = await supabase.rpc('check_unread_notifications', {
+      user_id: userData.user.id
+    });
+
+    if (error) {
+      console.error("Erro ao verificar notificações não lidas:", error);
+      return false;
+    }
+
+    return data > 0;
   } catch (error) {
-    console.error('Erro ao marcar notificações como lidas:', error);
-    return { success: false, error };
+    console.error("Erro inesperado ao verificar notificações:", error);
+    return false;
   }
-};
+}

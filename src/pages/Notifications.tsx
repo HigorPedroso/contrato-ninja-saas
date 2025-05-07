@@ -1,183 +1,54 @@
 
 import { useState, useEffect } from "react";
-import Sidebar from "@/components/dashboard/Sidebar";
-import DashboardHeader from "@/components/dashboard/DashboardHeader";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
-import { Bell, Check, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import Sidebar from "@/components/dashboard/Sidebar";
+import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import { Button } from "@/components/ui/button";
-import { toast } from "@/hooks/use-toast";
-
-type Notification = {
-  id: string;
-  user_id: string;
-  title: string;
-  message: string;
-  read: boolean;
-  created_at: string;
-};
+import { Card } from "@/components/ui/card";
+import { Notification, fetchUserNotifications, markNotificationAsRead } from "@/utils/notifications";
+import { useAuth } from "@/contexts/AuthContext";
 
 const NotificationsPage = () => {
-  const { user, refreshProfile } = useAuth();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
-  
+  const { refreshProfile } = useAuth();
+
+  const loadNotifications = async () => {
+    setLoading(true);
+    const data = await fetchUserNotifications();
+    setNotifications(data);
+    setLoading(false);
+  };
+
   useEffect(() => {
-    if (user) {
-      fetchNotifications();
-    }
-  }, [user]);
-  
-  const fetchNotifications = async () => {
-    try {
-      setLoading(true);
+    loadNotifications();
+  }, []);
+
+  const handleMarkAsRead = async (notification: Notification) => {
+    if (notification.read) return;
+
+    const success = await markNotificationAsRead(notification.id);
+    if (success) {
+      // Atualiza localmente o estado de leitura da notificação
+      setNotifications((prevNotifications) =>
+        prevNotifications.map((item) =>
+          item.id === notification.id ? { ...item, read: true } : item
+        )
+      );
       
-      if (!user) {
-        return;
-      }
-      
-      // Busca as notificações na tabela recém-criada
-      const { data, error } = await supabase.rpc('get_user_notifications', { 
-        user_id: user.id 
-      });
-      
-      if (error) {
-        console.error("Erro ao buscar notificações via RPC:", error);
-        
-        // Fallback para busca direta na tabela se a RPC não estiver disponível
-        const { data: notificationsData, error: notificationsError } = await supabase
-          .from('notifications')
-          .select('*')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false });
-        
-        if (notificationsError) {
-          console.error("Erro ao buscar notificações diretamente:", notificationsError);
-          setNotifications(generateMockNotifications());
-        } else {
-          setNotifications(notificationsData || []);
-        }
-      } else {
-        setNotifications(data || []);
-      }
-    } catch (error) {
-      console.error("Erro inesperado ao buscar notificações:", error);
-      setNotifications(generateMockNotifications());
-    } finally {
-      setLoading(false);
-    }
-  };
-  
-  const generateMockNotifications = (): Notification[] => {
-    return [
-      {
-        id: "1",
-        user_id: user?.id || "",
-        title: "Bem-vindo ao ContratoFlash",
-        message: "Obrigado por se cadastrar! Explore nossos modelos de contratos.",
-        read: false,
-        created_at: new Date().toISOString()
-      },
-      {
-        id: "2",
-        user_id: user?.id || "",
-        title: "Novo modelo disponível",
-        message: "Acabamos de adicionar um novo modelo de contrato para prestação de serviços de design.",
-        read: false,
-        created_at: new Date(Date.now() - 86400000).toISOString() // 1 dia atrás
-      },
-      {
-        id: "3",
-        user_id: user?.id || "",
-        title: "Desconto exclusivo",
-        message: "Assine o plano Premium nos próximos 7 dias e ganhe 20% de desconto!",
-        read: true,
-        created_at: new Date(Date.now() - 172800000).toISOString() // 2 dias atrás
-      }
-    ];
-  };
-  
-  const markAsRead = async (notificationId: string) => {
-    try {
-      const { error } = await supabase
-        .from('notifications')
-        .update({ read: true })
-        .eq('id', notificationId)
-        .eq('user_id', user?.id);
-      
-      if (error) {
-        throw error;
-      }
-      
-      // Atualiza o estado local
-      setNotifications(notifications.map(notification => 
-        notification.id === notificationId 
-          ? { ...notification, read: true } 
-          : notification
-      ));
-      
-      // Atualiza o status de notificações no AuthContext
+      // Atualiza o indicador de notificações no contexto de autenticação
       refreshProfile();
-      
-      toast({
-        title: "Notificação marcada como lida",
-        description: "A notificação foi atualizada com sucesso."
-      });
-    } catch (error) {
-      console.error("Erro ao marcar notificação como lida:", error);
-      toast({
-        title: "Erro ao atualizar notificação",
-        description: "Não foi possível marcar a notificação como lida.",
-        variant: "destructive"
-      });
     }
   };
-  
-  const markAllAsRead = async () => {
-    try {
-      const { error } = await supabase
-        .from('notifications')
-        .update({ read: true })
-        .eq('user_id', user?.id)
-        .eq('read', false);
-      
-      if (error) {
-        throw error;
-      }
-      
-      // Atualiza o estado local
-      setNotifications(notifications.map(notification => 
-        ({ ...notification, read: true })
-      ));
-      
-      // Atualiza o status de notificações no AuthContext
-      refreshProfile();
-      
-      toast({
-        title: "Todas as notificações foram marcadas como lidas",
-        description: "Suas notificações foram atualizadas com sucesso."
-      });
-    } catch (error) {
-      console.error("Erro ao marcar todas as notificações como lidas:", error);
-      toast({
-        title: "Erro ao atualizar notificações",
-        description: "Não foi possível marcar todas as notificações como lidas.",
-        variant: "destructive"
-      });
-    }
-  };
-  
+
   const formatDate = (dateString: string) => {
     try {
-      return format(new Date(dateString), "dd 'de' MMMM 'às' HH:mm", { locale: ptBR });
+      return format(new Date(dateString), "dd 'de' MMMM 'de' yyyy, HH:mm", { locale: ptBR });
     } catch (e) {
       return dateString;
     }
   };
-  
-  const hasUnreadNotifications = notifications.some(notification => !notification.read);
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
@@ -186,75 +57,66 @@ const NotificationsPage = () => {
       <div className="flex-1 lg:ml-64">
         <DashboardHeader 
           title="Notificações" 
-          description="Fique por dentro das novidades e atualizações do ContratoFlash" 
+          description="Mantenha-se atualizado com as novidades da plataforma" 
         />
         
         <main className="container mx-auto px-6 py-8">
-          <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-            <div className="p-6 border-b border-gray-200 flex justify-between items-center">
-              <div className="flex items-center">
-                <Bell className="h-5 w-5 text-brand-400 mr-2" />
-                <h2 className="text-xl font-medium">Suas Notificações</h2>
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-xl font-medium">Suas notificações</h2>
+            <Button 
+              variant="outline" 
+              onClick={loadNotifications}
+              disabled={loading}
+            >
+              Atualizar
+            </Button>
+          </div>
+          
+          <div className="space-y-4">
+            {loading ? (
+              <div className="text-center py-8">
+                <div className="animate-spin w-10 h-10 border-4 border-gray-300 border-t-brand-400 rounded-full mx-auto"></div>
+                <p className="mt-4 text-gray-600">Carregando notificações...</p>
               </div>
-              
-              {hasUnreadNotifications && (
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={markAllAsRead}
+            ) : notifications.length > 0 ? (
+              notifications.map((notification) => (
+                <Card
+                  key={notification.id}
+                  className={`p-4 transition-colors ${
+                    notification.read ? 'bg-white' : 'bg-brand-50 border-l-4 border-l-brand-400'
+                  }`}
+                  onClick={() => handleMarkAsRead(notification)}
                 >
-                  Marcar todas como lidas
-                </Button>
-              )}
-            </div>
-            
-            <div className="divide-y divide-gray-100">
-              {loading ? (
-                <div className="flex justify-center items-center p-12">
-                  <Loader2 className="h-8 w-8 animate-spin text-brand-400" />
-                </div>
-              ) : notifications.length > 0 ? (
-                notifications.map((notification) => (
-                  <div 
-                    key={notification.id} 
-                    className={`p-6 ${notification.read ? 'bg-white' : 'bg-brand-50'}`}
-                  >
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h3 className={`text-lg ${notification.read ? 'font-medium' : 'font-semibold'}`}>
-                          {notification.title}
-                        </h3>
-                        <p className="text-gray-600 mt-1">{notification.message}</p>
-                        <p className="text-gray-400 text-sm mt-2">
-                          {formatDate(notification.created_at)}
-                        </p>
-                      </div>
-                      
-                      {!notification.read && (
-                        <Button 
-                          variant="ghost" 
-                          size="sm"
-                          className="text-brand-400"
-                          onClick={() => markAsRead(notification.id)}
-                        >
-                          <Check className="h-4 w-4 mr-1" /> Marcar como lida
-                        </Button>
-                      )}
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h3 className={`text-lg ${notification.read ? 'font-medium' : 'font-semibold'}`}>
+                        {notification.title}
+                      </h3>
+                      <p className="text-gray-600 mt-1">{notification.message}</p>
                     </div>
+                    <span className="text-xs text-gray-500">
+                      {formatDate(notification.created_at)}
+                    </span>
                   </div>
-                ))
-              ) : (
-                <div className="text-center py-12">
-                  <Bell className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-1">
-                    Nenhuma notificação
-                  </h3>
-                  <p className="text-gray-500">
-                    Você não tem notificações no momento.
-                  </p>
-                </div>
-              )}
-            </div>
+                  
+                  {!notification.read && (
+                    <div className="flex justify-end mt-2">
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        className="text-xs"
+                      >
+                        Marcar como lida
+                      </Button>
+                    </div>
+                  )}
+                </Card>
+              ))
+            ) : (
+              <div className="text-center py-16 bg-white rounded-lg border border-gray-200">
+                <p className="text-gray-500">Você não tem notificações</p>
+              </div>
+            )}
           </div>
         </main>
       </div>

@@ -54,10 +54,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const checkNotifications = async (userId: string) => {
     try {
-      // Utilizando a tabela notifications agora criada
+      // Utilizando a função RPC check_unread_notifications
       const { data, error } = await supabase.rpc('check_unread_notifications', { user_id: userId });
       
-      if (!error) {
+      if (!error && data !== null) {
         setHasNotifications(data > 0);
       } else {
         // Fallback caso a função RPC não exista ainda

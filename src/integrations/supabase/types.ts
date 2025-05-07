@@ -212,6 +212,51 @@ export type Database = {
         }
         Relationships: []
       }
+      payments: {
+        Row: {
+          amount: number
+          created_at: string
+          currency: string
+          id: string
+          payment_date: string | null
+          payment_method: string | null
+          status: string
+          stripe_customer_id: string | null
+          stripe_payment_id: string | null
+          stripe_subscription_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          currency?: string
+          id?: string
+          payment_date?: string | null
+          payment_method?: string | null
+          status: string
+          stripe_customer_id?: string | null
+          stripe_payment_id?: string | null
+          stripe_subscription_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          currency?: string
+          id?: string
+          payment_date?: string | null
+          payment_method?: string | null
+          status?: string
+          stripe_customer_id?: string | null
+          stripe_payment_id?: string | null
+          stripe_subscription_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           company_name: string | null
@@ -268,6 +313,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_user_subscription: {
+        Args: { user_uuid: string }
+        Returns: boolean
+      }
       get_auth_user_id: {
         Args: Record<PropertyKey, never>
         Returns: string

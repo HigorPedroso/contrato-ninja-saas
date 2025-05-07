@@ -164,13 +164,13 @@ export async function updateContractStatus(contractId: string, status: 'draft' |
 
 export async function checkUserSubscription() {
   try {
-    const { user } = await supabase.auth.getUser();
-    if (!user) return false;
+    const { data: userData, error: userError } = await supabase.auth.getUser();
+    if (userError || !userData.user) return false;
     
     const { data, error } = await supabase
       .from('profiles')
       .select('subscription_plan')
-      .eq('id', user.id)
+      .eq('id', userData.user.id)
       .single();
       
     if (error) throw error;
