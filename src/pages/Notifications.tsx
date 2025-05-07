@@ -34,17 +34,31 @@ const NotificationsPage = () => {
     try {
       setLoading(true);
       
-      // Verifica se a tabela notifications existe, se não, pode criar uma mock
-      const { data, error } = await supabase
-        .from("notifications")
-        .select("*")
-        .eq("user_id", user?.id)
-        .order("created_at", { ascending: false });
+      if (!user) {
+        return;
+      }
+      
+      // Busca as notificações na tabela recém-criada
+      const { data, error } = await supabase.rpc('get_user_notifications', { 
+        user_id: user.id 
+      });
       
       if (error) {
-        console.error("Erro ao buscar notificações:", error);
-        // Se a tabela não existir, cria notificações mock para demonstração
-        setNotifications(generateMockNotifications());
+        console.error("Erro ao buscar notificações via RPC:", error);
+        
+        // Fallback para busca direta na tabela se a RPC não estiver disponível
+        const { data: notificationsData, error: notificationsError } = await supabase
+          .from('notifications')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false });
+        
+        if (notificationsError) {
+          console.error("Erro ao buscar notificações diretamente:", notificationsError);
+          setNotifications(generateMockNotifications());
+        } else {
+          setNotifications(notificationsData || []);
+        }
       } else {
         setNotifications(data || []);
       }
@@ -87,8 +101,17 @@ const NotificationsPage = () => {
   
   const markAsRead = async (notificationId: string) => {
     try {
-      // Aqui você implementaria a lógica para marcar como lida no banco
-      // Como pode ser uma tabela mock, vamos apenas atualizar o state
+      const { error } = await supabase
+        .from('notifications')
+        .update({ read: true })
+        .eq('id', notificationId)
+        .eq('user_id', user?.id);
+      
+      if (error) {
+        throw error;
+      }
+      
+      // Atualiza o estado local
       setNotifications(notifications.map(notification => 
         notification.id === notificationId 
           ? { ...notification, read: true } 
@@ -104,13 +127,27 @@ const NotificationsPage = () => {
       });
     } catch (error) {
       console.error("Erro ao marcar notificação como lida:", error);
+      toast({
+        title: "Erro ao atualizar notificação",
+        description: "Não foi possível marcar a notificação como lida.",
+        variant: "destructive"
+      });
     }
   };
   
   const markAllAsRead = async () => {
     try {
-      // Aqui você implementaria a lógica para marcar todas como lidas no banco
-      // Como pode ser uma tabela mock, vamos apenas atualizar o state
+      const { error } = await supabase
+        .from('notifications')
+        .update({ read: true })
+        .eq('user_id', user?.id)
+        .eq('read', false);
+      
+      if (error) {
+        throw error;
+      }
+      
+      // Atualiza o estado local
       setNotifications(notifications.map(notification => 
         ({ ...notification, read: true })
       ));
@@ -124,6 +161,11 @@ const NotificationsPage = () => {
       });
     } catch (error) {
       console.error("Erro ao marcar todas as notificações como lidas:", error);
+      toast({
+        title: "Erro ao atualizar notificações",
+        description: "Não foi possível marcar todas as notificações como lidas.",
+        variant: "destructive"
+      });
     }
   };
   

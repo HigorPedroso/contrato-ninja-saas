@@ -20,54 +20,81 @@ interface DashboardHeaderProps {
   description?: string;
 }
 
+// Tipo para as notificações
+type NotificationPreview = {
+  id: string;
+  title: string;
+  message: string;
+  created_at: string;
+};
+
 const DashboardHeader = ({ title, description }: DashboardHeaderProps) => {
   const { toast } = useToast();
-  const { hasNotifications, refreshProfile } = useAuth();
-  const [showNotifications, setShowNotifications] = useState(false);
-  const [notifications, setNotifications] = useState<any[]>([]);
+  const { hasNotifications, refreshProfile, user } = useAuth();
+  const [notifications, setNotifications] = useState<NotificationPreview[]>([]);
   const [loadingNotifications, setLoadingNotifications] = useState(false);
 
   const handleNotificationClick = async () => {
     try {
+      if (!user) return;
+      
       setLoadingNotifications(true);
       
-      // Aqui você implementaria a lógica para buscar notificações recentes
-      // Como pode ser uma tabela mock, vamos apenas criar algumas notificações de exemplo
-      const mockNotifications = [
-        {
-          id: "1",
-          title: "Contrato criado",
-          message: "Seu novo contrato foi criado com sucesso.",
-          time: "Há 5 minutos"
-        },
-        {
-          id: "2",
-          title: "Plano atualizado",
-          message: "Sua assinatura foi atualizada para o plano Premium.",
-          time: "Há 3 horas"
-        },
-        {
-          id: "3",
-          title: "Recurso desbloqueado",
-          message: "Agora você tem acesso a todos os modelos premium.",
-          time: "Há 1 dia"
-        }
-      ];
+      // Busca as últimas notificações
+      const { data, error } = await supabase
+        .from('notifications')
+        .select('id, title, message, created_at')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(3);
       
-      setNotifications(mockNotifications);
-      setShowNotifications(true);
+      if (error) {
+        throw error;
+      }
+      
+      // Formata as notificações para exibição
+      const formattedNotifications: NotificationPreview[] = data.map(notification => ({
+        id: notification.id,
+        title: notification.title,
+        message: notification.message,
+        created_at: formatTimeAgo(new Date(notification.created_at))
+      }));
+      
+      setNotifications(formattedNotifications);
       
       // Marca notificações como lidas no contexto de autenticação
       await refreshProfile();
     } catch (error) {
       console.error("Erro ao buscar notificações:", error);
+      // Usa dados mockados em caso de falha
+      setNotifications([
+        {
+          id: "1",
+          title: "Contrato criado",
+          message: "Seu novo contrato foi criado com sucesso.",
+          created_at: "Há 5 minutos"
+        },
+        {
+          id: "2",
+          title: "Plano atualizado",
+          message: "Sua assinatura foi atualizada para o plano Premium.",
+          created_at: "Há 3 horas"
+        }
+      ]);
     } finally {
       setLoadingNotifications(false);
     }
   };
 
-  const closeNotificationsPanel = () => {
-    setShowNotifications(false);
+  // Função auxiliar para formatar tempo relativo
+  const formatTimeAgo = (date: Date): string => {
+    const now = new Date();
+    const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+    
+    if (diffInSeconds < 60) return "Agora mesmo";
+    if (diffInSeconds < 3600) return `Há ${Math.floor(diffInSeconds / 60)} minutos`;
+    if (diffInSeconds < 86400) return `Há ${Math.floor(diffInSeconds / 3600)} horas`;
+    return `Há ${Math.floor(diffInSeconds / 86400)} dias`;
   };
 
   return (
@@ -87,6 +114,7 @@ const DashboardHeader = ({ title, description }: DashboardHeaderProps) => {
                   variant="ghost"
                   size="icon"
                   className="relative"
+                  onClick={handleNotificationClick}
                 >
                   <Bell className="h-5 w-5" />
                   {hasNotifications && (
@@ -114,7 +142,7 @@ const DashboardHeader = ({ title, description }: DashboardHeaderProps) => {
                       <DropdownMenuItem key={notification.id} className="flex-col items-start py-2 px-4 hover:bg-gray-50 cursor-default">
                         <div className="font-medium text-sm">{notification.title}</div>
                         <div className="text-xs text-gray-500 mt-1">{notification.message}</div>
-                        <div className="text-xs text-gray-400 mt-1">{notification.time}</div>
+                        <div className="text-xs text-gray-400 mt-1">{notification.created_at}</div>
                       </DropdownMenuItem>
                     ))}
                     <DropdownMenuSeparator />

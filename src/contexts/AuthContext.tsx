@@ -54,22 +54,29 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const checkNotifications = async (userId: string) => {
     try {
-      // Aqui você implementaria sua lógica de verificação de notificações
-      // Este é apenas um exemplo - adapte para sua estrutura de dados
-      const { data, error } = await supabase
-        .from('notifications')
-        .select('*')
-        .eq('user_id', userId)
-        .eq('read', false)
-        .limit(1);
+      // Utilizando a tabela notifications agora criada
+      const { data, error } = await supabase.rpc('check_unread_notifications', { user_id: userId });
       
-      if (!error && data && data.length > 0) {
-        setHasNotifications(true);
+      if (!error) {
+        setHasNotifications(data > 0);
       } else {
-        setHasNotifications(false);
+        // Fallback caso a função RPC não exista ainda
+        const { data: notificationsData, error: notificationsError } = await supabase
+          .from('notifications')
+          .select('id')
+          .eq('user_id', userId)
+          .eq('read', false)
+          .limit(1);
+        
+        if (!notificationsError && notificationsData && notificationsData.length > 0) {
+          setHasNotifications(true);
+        } else {
+          setHasNotifications(false);
+        }
       }
     } catch (error) {
       console.error("Erro ao verificar notificações:", error);
+      setHasNotifications(false);
     }
   };
 

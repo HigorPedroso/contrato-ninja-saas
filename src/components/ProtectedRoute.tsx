@@ -1,6 +1,7 @@
 
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { Loader2 } from "lucide-react";
 
 const ProtectedRoute = () => {
   const { user, loading } = useAuth();
@@ -9,8 +10,11 @@ const ProtectedRoute = () => {
   // Mostra estado de carregamento durante a verificação de autenticação
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brand-400"></div>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <Loader2 className="h-12 w-12 animate-spin text-brand-400 mx-auto" />
+          <p className="mt-4 text-gray-600">Carregando...</p>
+        </div>
       </div>
     );
   }
