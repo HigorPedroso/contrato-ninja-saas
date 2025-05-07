@@ -26,7 +26,7 @@ export async function fetchUserContracts(): Promise<Contract[]> {
       .order('created_at', { ascending: false });
 
     if (error) {
-      console.error("Error fetching contracts:", error);
+      console.error("Erro ao carregar contratos:", error);
       toast({
         title: "Erro ao carregar contratos",
         description: "Não foi possível carregar seus contratos. Tente novamente.",
@@ -35,7 +35,7 @@ export async function fetchUserContracts(): Promise<Contract[]> {
       return [];
     }
 
-    // Transform the data to the expected format
+    // Transforma os dados para o formato esperado
     return (data || []).map(contract => ({
       id: contract.id,
       title: contract.title,
@@ -45,7 +45,7 @@ export async function fetchUserContracts(): Promise<Contract[]> {
       status: contract.status,
     }));
   } catch (error) {
-    console.error("Unexpected error fetching contracts:", error);
+    console.error("Erro inesperado ao buscar contratos:", error);
     toast({
       title: "Erro inesperado",
       description: "Ocorreu um erro inesperado. Tente novamente.",
@@ -63,7 +63,7 @@ export async function fetchContractTemplates() {
       .order('title');
 
     if (error) {
-      console.error("Error fetching contract templates:", error);
+      console.error("Erro ao carregar modelos de contrato:", error);
       toast({
         title: "Erro ao carregar modelos",
         description: "Não foi possível carregar os modelos de contrato. Tente novamente.",
@@ -74,12 +74,110 @@ export async function fetchContractTemplates() {
 
     return data || [];
   } catch (error) {
-    console.error("Unexpected error fetching contract templates:", error);
+    console.error("Erro inesperado ao buscar modelos de contrato:", error);
     toast({
       title: "Erro inesperado",
       description: "Ocorreu um erro inesperado. Tente novamente.",
       variant: "destructive",
     });
     return [];
+  }
+}
+
+export async function fetchContractById(contractId: string) {
+  try {
+    const { data, error } = await supabase
+      .from('contracts')
+      .select(`
+        id,
+        title,
+        client_name,
+        client_email,
+        content,
+        status,
+        created_at,
+        contract_templates(title, template_type)
+      `)
+      .eq('id', contractId)
+      .single();
+
+    if (error) {
+      console.error("Erro ao carregar contrato:", error);
+      toast({
+        title: "Erro ao carregar contrato",
+        description: "Não foi possível carregar os detalhes do contrato. Tente novamente.",
+        variant: "destructive",
+      });
+      return null;
+    }
+
+    return data;
+  } catch (error) {
+    console.error("Erro inesperado ao buscar contrato:", error);
+    toast({
+      title: "Erro inesperado",
+      description: "Ocorreu um erro inesperado. Tente novamente.",
+      variant: "destructive",
+    });
+    return null;
+  }
+}
+
+export async function updateContractStatus(contractId: string, status: 'draft' | 'active' | 'expired' | 'canceled') {
+  try {
+    const { error } = await supabase
+      .from('contracts')
+      .update({ status })
+      .eq('id', contractId);
+
+    if (error) {
+      console.error("Erro ao atualizar status do contrato:", error);
+      toast({
+        title: "Erro ao atualizar status",
+        description: "Não foi possível atualizar o status do contrato. Tente novamente.",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    toast({
+      title: "Status atualizado",
+      description: `O contrato foi marcado como ${
+        status === 'active' ? 'Ativo' : 
+        status === 'draft' ? 'Rascunho' : 
+        status === 'expired' ? 'Expirado' : 
+        'Cancelado'
+      }.`,
+    });
+
+    return true;
+  } catch (error) {
+    console.error("Erro inesperado ao atualizar status do contrato:", error);
+    toast({
+      title: "Erro inesperado",
+      description: "Ocorreu um erro inesperado. Tente novamente.",
+      variant: "destructive",
+    });
+    return false;
+  }
+}
+
+export async function checkUserSubscription() {
+  try {
+    const { user } = await supabase.auth.getUser();
+    if (!user) return false;
+    
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('subscription_plan')
+      .eq('id', user.id)
+      .single();
+      
+    if (error) throw error;
+    
+    return data?.subscription_plan === 'premium';
+  } catch (error) {
+    console.error("Erro ao verificar assinatura:", error);
+    return false;
   }
 }

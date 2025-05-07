@@ -14,6 +14,9 @@ import Contracts from "./pages/Contracts";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import Subscription from "./pages/Subscription";
+import BlogPosts from "./pages/BlogPosts";
+import Notifications from "./pages/Notifications";
 
 const queryClient = new QueryClient();
 
@@ -25,20 +28,23 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <Routes>
-            {/* Public Routes */}
+            {/* Rotas Públicas */}
             <Route path="/" element={<Home />} />
             <Route path="/blog" element={<Blog />} />
             <Route path="/login" element={<Login />} />
             <Route path="/registro" element={<Register />} />
             
-            {/* Protected Routes */}
+            {/* Rotas Protegidas */}
             <Route element={<ProtectedRoute />}>
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/dashboard/contratos" element={<Contracts />} />
               <Route path="/dashboard/criar-contrato" element={<CreateContract />} />
+              <Route path="/dashboard/assinatura" element={<Subscription />} />
+              <Route path="/dashboard/blog" element={<BlogPosts />} />
+              <Route path="/dashboard/notificacoes" element={<Notifications />} />
             </Route>
             
-            {/* Catch-all route for 404 */}
+            {/* Rota 404 */}
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

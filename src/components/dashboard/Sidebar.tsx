@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from "react";
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
-import { Home, FileText, Plus, Users, Settings, LogOut } from "lucide-react";
+import { Home, FileText, Plus, Users, Settings, LogOut, Bell, Newspaper } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -13,40 +13,21 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { Badge } from "@/components/ui/badge";
 
 const Sidebar = () => {
-  const { user, signOut } = useAuth();
+  const { user, signOut, profile, hasNotifications, isSubscribed, refreshProfile } = useAuth();
   const navigate = useNavigate();
-  const [userProfile, setUserProfile] = useState<any>(null);
   
   useEffect(() => {
-    const fetchUserProfile = async () => {
-      if (!user) return;
-      
-      try {
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', user.id)
-          .single();
-          
-        if (error) {
-          console.error('Erro ao buscar perfil:', error);
-          return;
-        }
-        
-        setUserProfile(data);
-      } catch (error) {
-        console.error('Erro inesperado:', error);
-      }
-    };
-    
-    fetchUserProfile();
+    if (user) {
+      refreshProfile();
+    }
   }, [user]);
   
   const handleLogout = async () => {
     await signOut();
-    navigate("/");
+    navigate("/login");
   };
 
   const location = useLocation();
@@ -61,8 +42,8 @@ const Sidebar = () => {
   };
   
   const getInitials = () => {
-    if (userProfile?.full_name) {
-      return userProfile.full_name
+    if (profile?.full_name) {
+      return profile.full_name
         .split(' ')
         .map((n: string) => n[0])
         .join('')
@@ -128,15 +109,24 @@ const Sidebar = () => {
       <div className="px-6 py-4 border-b border-gray-200">
         <div className="flex items-center space-x-3">
           <Avatar>
-            <AvatarImage src={user?.user_metadata?.avatar_url} alt={userProfile?.full_name || user?.email} />
+            <AvatarImage src={user?.user_metadata?.avatar_url} alt={profile?.full_name || user?.email || ""} />
             <AvatarFallback>{getInitials()}</AvatarFallback>
           </Avatar>
           <div className="flex flex-col">
             <span className="font-medium text-gray-900">
-              {userProfile?.full_name || user?.email}
+              {profile?.full_name || user?.email}
             </span>
             <span className="text-sm text-gray-500">
-              {userProfile?.full_name ? user?.email : ''}
+              {profile?.full_name ? user?.email : ''}
+            </span>
+            <span className="text-xs font-medium">
+              {isSubscribed ? (
+                <Badge variant="default" className="bg-brand-400 hover:bg-brand-500">
+                  Plano Premium
+                </Badge>
+              ) : (
+                <Badge variant="outline">Plano Gratuito</Badge>
+              )}
             </span>
           </div>
         </div>
@@ -161,7 +151,7 @@ const Sidebar = () => {
               end
             >
               <Home className="h-4 w-4" />
-              <span>Dashboard</span>
+              <span>Painel Principal</span>
             </NavLink>
           </li>
           <li>
@@ -194,16 +184,69 @@ const Sidebar = () => {
               <span>Criar Contrato</span>
             </NavLink>
           </li>
+          <li>
+            <NavLink
+              to="/dashboard/notificacoes"
+              className={({ isActive }) =>
+                `flex items-center space-x-3 py-2 px-4 rounded-lg transition duration-200 ${isActive
+                  ? "bg-gray-100 text-brand-500 font-medium"
+                  : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
+                }`
+              }
+              onClick={closeMenu}
+            >
+              <Bell className="h-4 w-4" />
+              <span className="flex items-center">
+                Notificações
+                {hasNotifications && (
+                  <span className="ml-2 w-2 h-2 bg-red-500 rounded-full"></span>
+                )}
+              </span>
+            </NavLink>
+          </li>
+          {isSubscribed && (
+            <li>
+              <NavLink
+                to="/dashboard/blog"
+                className={({ isActive }) =>
+                  `flex items-center space-x-3 py-2 px-4 rounded-lg transition duration-200 ${isActive
+                    ? "bg-gray-100 text-brand-500 font-medium"
+                    : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
+                  }`
+                }
+                onClick={closeMenu}
+              >
+                <Newspaper className="h-4 w-4" />
+                <span>Blog</span>
+              </NavLink>
+            </li>
+          )}
         </ul>
 
-        {/* Logout Button */}
-        <button
-          onClick={handleLogout}
-          className="flex items-center space-x-3 py-2 px-4 rounded-lg transition duration-200 text-gray-700 hover:bg-gray-50 hover:text-gray-900 w-full mt-8"
-        >
-          <LogOut className="h-4 w-4" />
-          <span>Sair</span>
-        </button>
+        <div className="mt-8 pt-4 border-t border-gray-200">
+          <NavLink
+            to="/dashboard/assinatura"
+            className={({ isActive }) =>
+              `flex items-center space-x-3 py-2 px-4 rounded-lg transition duration-200 ${isActive
+                ? "bg-gray-100 text-brand-500 font-medium"
+                : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
+              }`
+            }
+            onClick={closeMenu}
+          >
+            <Settings className="h-4 w-4" />
+            <span>Gerenciar Assinatura</span>
+          </NavLink>
+          
+          {/* Botão de Logout */}
+          <button
+            onClick={handleLogout}
+            className="flex items-center space-x-3 py-2 px-4 rounded-lg transition duration-200 text-gray-700 hover:bg-gray-50 hover:text-gray-900 w-full mt-2"
+          >
+            <LogOut className="h-4 w-4" />
+            <span>Sair</span>
+          </button>
+        </div>
       </nav>
     </div>
   );

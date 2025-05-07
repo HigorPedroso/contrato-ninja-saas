@@ -6,7 +6,7 @@ const ProtectedRoute = () => {
   const { user, loading } = useAuth();
   const location = useLocation();
 
-  // Show loading state while checking authentication
+  // Mostra estado de carregamento durante a verificação de autenticação
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -15,13 +15,13 @@ const ProtectedRoute = () => {
     );
   }
 
-  // Redirect to login if not authenticated
+  // Redireciona para login se não estiver autenticado
   if (!user) {
-    // Save the attempted URL for redirection after login
+    // Salva a URL tentada para redirecionamento após login
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  // Render the protected route
+  // Renderiza a rota protegida
   return <Outlet />;
 };
 

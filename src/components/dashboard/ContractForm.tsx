@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { ChevronDown, ChevronRight, FileText, Download } from "lucide-react";
+import { ChevronDown, ChevronRight, FileText, Download, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -43,15 +43,44 @@ const getFieldsFromTemplate = (content: string): ContractField[] => {
   return uniqueFields.map(field => {
     const key = field;
     
+    // Tradução das labels para português
     let label = field.replace(/_/g, ' ').toLowerCase();
+    
+    // Mapeamento de termos em inglês para português
+    const translations: Record<string, string> = {
+      'client': 'cliente',
+      'name': 'nome',
+      'service': 'serviço',
+      'description': 'descrição',
+      'value': 'valor',
+      'amount': 'montante',
+      'date': 'data',
+      'deadline': 'prazo',
+      'payment': 'pagamento',
+      'terms': 'termos',
+      'activities': 'atividades',
+      'contract': 'contrato',
+      'period': 'período',
+      'company': 'empresa',
+      'address': 'endereço',
+      'percentage': 'percentual',
+      'number': 'número'
+    };
+    
+    // Aplica tradução quando possível
+    Object.entries(translations).forEach(([en, pt]) => {
+      label = label.replace(new RegExp(en, 'gi'), pt);
+    });
+    
+    // Primeira letra maiúscula
     label = label.charAt(0).toUpperCase() + label.slice(1);
     
     let type: "text" | "textarea" | "number" | "date" = "text";
     
-    // Determine field type based on field name
+    // Determine o tipo de campo baseado no nome
     if (field.includes("DATE")) {
       type = "date";
-    } else if (field.includes("AMOUNT") || field.includes("PERCENTAGE") || field.includes("NUMBER")) {
+    } else if (field.includes("AMOUNT") || field.includes("PERCENTAGE") || field.includes("NUMBER") || field.includes("VALUE")) {
       type = "number";
     } else if (field.includes("DESCRIPTION") || field.includes("TERMS") || field.includes("ACTIVITIES")) {
       type = "textarea";
@@ -72,6 +101,7 @@ const ContractForm = () => {
   const [clientEmail, setClientEmail] = useState("");
   const [fields, setFields] = useState<ContractField[]>([]);
   const [generatedContent, setGeneratedContent] = useState("");
+  const [isPreviewing, setIsPreviewing] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -91,10 +121,10 @@ const ContractForm = () => {
     const template = templates.find(t => t.id === value);
     if (template) {
       setSelectedTemplate(value);
-      // Extract fields from template content
+      // Extrai campos do template
       const extractedFields = getFieldsFromTemplate(template.content);
       setFields(extractedFields);
-      // Reset form data
+      // Reinicia os dados do formulário
       setFormData({});
     }
   };
@@ -104,6 +134,22 @@ const ContractForm = () => {
       ...formData,
       [field]: value,
     });
+  };
+
+  const formatContractContent = (content: string) => {
+    // Formatação do conteúdo do contrato com estilos HTML
+    let formattedContent = content
+      .replace(/\n\n/g, '<br><br>') // Quebras de linha
+      .replace(/\n/g, '<br>') // Quebras de linha simples
+      .replace(/CLÁUSULA (.*?):/g, '<br><strong>CLÁUSULA $1:</strong><br>') // Destaca cláusulas
+      .replace(/Artigo (.*?):/g, '<br><strong>Artigo $1:</strong><br>') // Destaca artigos
+      .replace(/O QUE SERÁ FEITO/g, '<strong>O QUE SERÁ FEITO</strong>')
+      .replace(/QUANTO SERÁ PAGO/g, '<strong>QUANTO SERÁ PAGO</strong>')
+      .replace(/PRAZO DE ENTREGA/g, '<strong>PRAZO DE ENTREGA</strong>')
+      .replace(/RESCISÃO/g, '<strong>RESCISÃO</strong>')
+      .replace(/FORO/g, '<strong>FORO</strong>');
+    
+    return formattedContent;
   };
 
   const handleNext = () => {
@@ -121,14 +167,63 @@ const ContractForm = () => {
     
     let content = selectedTemplateObj.content;
     
-    // Replace placeholders with form data
+    // Substitui os placeholders com os dados do formulário
     for (const [key, value] of Object.entries(formData)) {
       content = content.replace(new RegExp(`\\{${key}\\}`, 'g'), value);
     }
 
-    setGeneratedContent(content);
+    // Simplifica o contrato para linguagem mais acessível
+    content = simplifyContractLanguage(content);
+
+    // Formata o conteúdo para melhor visualização
+    const formattedContent = formatContractContent(content);
+
+    setGeneratedContent(formattedContent);
     setStep(2);
     window.scrollTo(0, 0);
+  };
+
+  // Função para simplificar a linguagem jurídica do contrato
+  const simplifyContractLanguage = (content: string): string => {
+    let simplified = content;
+    
+    // Substitui jargões e termos complexos por linguagem mais simples
+    const replacements = [
+      { from: "as partes, de comum acordo, pactuam", to: "ambos concordam" },
+      { from: "o presente instrumento", to: "este contrato" },
+      { from: "conforme disposto na cláusula", to: "como indicado no item" },
+      { from: "no que tange", to: "sobre" },
+      { from: "far-se-á", to: "será feito" },
+      { from: "supramencionado", to: "mencionado acima" },
+      { from: "supracitado", to: "citado acima" },
+      { from: "mediante", to: "por meio de" },
+      { from: "rescisão do instrumento", to: "cancelamento do contrato" },
+      { from: "o ora contratado", to: "o prestador de serviços" },
+      { from: "o ora contratante", to: "o cliente" },
+      { from: "outorgar", to: "conceder" },
+      { from: "subsequente", to: "seguinte" },
+      { from: "precedente", to: "anterior" },
+      { from: "adimplemento", to: "pagamento" },
+      { from: "inadimplemento", to: "falta de pagamento" },
+      { from: "a parte que incorrer em mora", to: "quem atrasar o pagamento" },
+      { from: "por intermédio de", to: "através de" },
+      { from: "elege-se o foro", to: "fica definido o foro" },
+      { from: "dirimir questões oriundas", to: "resolver problemas relacionados" }
+    ];
+    
+    replacements.forEach(({ from, to }) => {
+      simplified = simplified.replace(new RegExp(from, 'gi'), to);
+    });
+    
+    // Adiciona subtítulos mais claros
+    simplified = simplified
+      .replace(/CLÁUSULA\s+(\d+|PRIMEIRA|SEGUNDA|TERCEIRA|QUARTA|QUINTA)\s*[-–:]\s*DO OBJETO/gi, "O QUE SERÁ FEITO")
+      .replace(/CLÁUSULA\s+(\d+|PRIMEIRA|SEGUNDA|TERCEIRA|QUARTA|QUINTA)\s*[-–:]\s*DO PAGAMENTO/gi, "QUANTO SERÁ PAGO")
+      .replace(/CLÁUSULA\s+(\d+|PRIMEIRA|SEGUNDA|TERCEIRA|QUARTA|QUINTA)\s*[-–:]\s*DO PRAZO/gi, "PRAZO DE ENTREGA")
+      .replace(/CLÁUSULA\s+(\d+|PRIMEIRA|SEGUNDA|TERCEIRA|QUARTA|QUINTA)\s*[-–:]\s*DA RESCISÃO/gi, "RESCISÃO")
+      .replace(/CLÁUSULA\s+(\d+|PRIMEIRA|SEGUNDA|TERCEIRA|QUARTA|QUINTA)\s*[-–:]\s*DO FORO/gi, "FORO");
+    
+    return simplified;
   };
 
   const generateContract = async () => {
@@ -142,7 +237,30 @@ const ContractForm = () => {
     }
     
     try {
-      // Insert contract into database
+      // Verifica se o usuário tem premium antes de permitir salvar
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('subscription_plan')
+        .eq('id', user.id)
+        .single();
+      
+      if (profileError) {
+        console.error("Erro ao verificar plano do usuário:", profileError);
+      }
+      
+      const isPremium = profile?.subscription_plan === 'premium';
+      const selectedTemplateObj = templates.find(t => t.id === selectedTemplate);
+      
+      if (selectedTemplateObj?.is_premium && !isPremium) {
+        toast({
+          title: "Recurso premium",
+          description: "Este modelo de contrato é exclusivo para assinantes premium. Faça upgrade do seu plano para continuar.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Salva contrato no banco de dados
       const { error } = await supabase.from('contracts').insert({
         user_id: user.id,
         template_id: selectedTemplate,
@@ -154,7 +272,7 @@ const ContractForm = () => {
       });
       
       if (error) {
-        console.error("Error creating contract:", error);
+        console.error("Erro ao criar contrato:", error);
         throw error;
       }
       
@@ -163,10 +281,10 @@ const ContractForm = () => {
         description: "Seu contrato foi salvo e está disponível para download.",
       });
       
-      // Redirect to contracts page
+      // Redirecionamento para página de contratos
       navigate("/dashboard/contratos");
     } catch (error: any) {
-      console.error("Error creating contract:", error);
+      console.error("Erro ao criar contrato:", error);
       toast({
         title: "Erro ao criar contrato",
         description: error.message || "Não foi possível salvar seu contrato. Tente novamente.",
@@ -179,15 +297,17 @@ const ContractForm = () => {
     try {
       const doc = new jsPDF();
       
-      // Add title
-      doc.setFontSize(20);
+      // Define estilo e tamanho da fonte
       doc.setFont("helvetica", "bold");
+      doc.setFontSize(16);
+      
+      // Adiciona título
       doc.text(contractTitle, 20, 20);
       
-      // Add client information if available
+      // Adiciona informações do cliente, se disponíveis
       if (clientName) {
-        doc.setFontSize(14);
         doc.setFont("helvetica", "normal");
+        doc.setFontSize(12);
         doc.text(`Cliente: ${clientName}`, 20, 35);
         
         if (clientEmail) {
@@ -195,31 +315,55 @@ const ContractForm = () => {
         }
       }
       
-      // Add content with proper spacing
-      doc.setFontSize(12);
+      // Converte HTML para texto puro para o PDF
+      const htmlContent = generatedContent;
+      let plainContent = htmlContent
+        .replace(/<br>/g, '\n')
+        .replace(/<\/?strong>/g, '')
+        .replace(/<\/?[^>]+(>|$)/g, '');
+      
+      // Adiciona conteúdo com espaçamento adequado
+      doc.setFontSize(11);
       doc.setFont("helvetica", "normal");
       
-      // Split text into lines to fit page width
-      const splitText = doc.splitTextToSize(generatedContent, 170);
+      // Divide o texto em linhas para caber na largura da página
+      const splitText = doc.splitTextToSize(plainContent, 170);
       doc.text(splitText, 20, clientName ? 55 : 40);
       
-      // Add footer with date
+      // Adiciona rodapé com data e assinaturas
       const today = new Date();
       const dateStr = today.toLocaleDateString('pt-BR');
-      doc.setFontSize(10);
-      doc.text(`Documento gerado em: ${dateStr} via ContratoFlash`, 20, doc.internal.pageSize.height - 10);
       
-      // Generate a filename based on contract title and client name
+      const pageHeight = doc.internal.pageSize.height;
+      
+      // Adiciona local para assinaturas
+      doc.text("_".repeat(30), 30, pageHeight - 50);
+      doc.text("_".repeat(30), 120, pageHeight - 50);
+      
+      doc.setFontSize(10);
+      doc.text("CONTRATANTE", 40, pageHeight - 40);
+      doc.text("CONTRATADO", 130, pageHeight - 40);
+      
+      // Adiciona data
+      doc.setFontSize(9);
+      doc.text(`Documento gerado em: ${dateStr} via ContratoFlash`, 20, pageHeight - 20);
+      
+      // Gera um nome de arquivo baseado no título e nome do cliente
       let filename = "contrato";
       if (clientName) {
-        // Remove special characters and replace spaces with hyphens
-        const clientNameNormalized = clientName.normalize("NFD").replace(/[\u0300-\u036f]/g, "")
-          .replace(/[^\w\s-]/g, "").trim().toLowerCase().replace(/\s+/g, "-");
+        // Remove caracteres especiais e substitui espaços por hifens
+        const clientNameNormalized = clientName
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .replace(/[^\w\s-]/g, "")
+          .trim()
+          .toLowerCase()
+          .replace(/\s+/g, "-");
         filename += `-${clientNameNormalized}`;
       }
       filename += ".pdf";
       
-      // Save the PDF
+      // Salva o PDF
       doc.save(filename);
       
       toast({
@@ -227,13 +371,17 @@ const ContractForm = () => {
         description: "Seu contrato foi baixado como PDF.",
       });
     } catch (error) {
-      console.error("Error generating PDF:", error);
+      console.error("Erro ao gerar PDF:", error);
       toast({
         title: "Erro ao gerar PDF",
         description: "Não foi possível gerar o PDF. Tente novamente.",
         variant: "destructive",
       });
     }
+  };
+
+  const previewPDF = () => {
+    setIsPreviewing(!isPreviewing);
   };
 
   return (
@@ -432,15 +580,19 @@ const ContractForm = () => {
             </div>
           </div>
 
-          <div className="border p-4 rounded-lg my-8 whitespace-pre-wrap bg-white">
+          <div className="border p-4 rounded-lg my-8">
             <h3 className="text-lg font-medium mb-4">Visualização do Contrato</h3>
-            <div className="prose prose-sm max-w-none">
-              {generatedContent.split('\n').map((line, index) => (
-                <p key={index} className="mb-2">
-                  {line}
-                </p>
-              ))}
-            </div>
+            
+            {isPreviewing ? (
+              <div 
+                className="prose prose-sm max-w-none p-8 bg-white shadow-sm rounded"
+                dangerouslySetInnerHTML={{ __html: generatedContent }}
+              />
+            ) : (
+              <div className="prose prose-sm max-w-none">
+                <div dangerouslySetInnerHTML={{ __html: generatedContent }}></div>
+              </div>
+            )}
           </div>
 
           <div className="flex flex-wrap gap-4 justify-between">
@@ -448,6 +600,13 @@ const ContractForm = () => {
               Editar Informações
             </Button>
             <div className="flex gap-2">
+              <Button
+                variant="outline"
+                className="border-brand-400 text-brand-400 hover:bg-brand-50"
+                onClick={previewPDF}
+              >
+                <Eye className="mr-2 h-4 w-4" /> {isPreviewing ? "Fechar visualização" : "Visualizar contrato"}
+              </Button>
               <Button
                 variant="outline"
                 className="border-brand-400 text-brand-400 hover:bg-brand-50"
