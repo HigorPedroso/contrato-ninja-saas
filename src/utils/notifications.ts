@@ -18,9 +18,12 @@ export async function fetchUserNotifications() {
       throw new Error("Usuário não autenticado");
     }
 
-    const { data, error } = await supabase.rpc('get_user_notifications', {
-      user_id: userData.user.id
-    });
+    // Usar a função RPC corretamente com tipagem
+    const { data, error } = await supabase
+      .from('notifications')
+      .select('*')
+      .eq('user_id', userData.user.id)
+      .order('created_at', { ascending: false });
 
     if (error) {
       console.error("Erro ao buscar notificações:", error);
@@ -60,16 +63,20 @@ export async function checkHasUnreadNotifications() {
       return false;
     }
 
-    const { data, error } = await supabase.rpc('check_unread_notifications', {
-      user_id: userData.user.id
-    });
+    // Usar uma consulta direta em vez de RPC
+    const { data, error, count } = await supabase
+      .from('notifications')
+      .select('*', { count: 'exact' })
+      .eq('user_id', userData.user.id)
+      .eq('read', false)
+      .limit(1);
 
     if (error) {
       console.error("Erro ao verificar notificações não lidas:", error);
       return false;
     }
 
-    return data > 0;
+    return count !== null && count > 0;
   } catch (error) {
     console.error("Erro inesperado ao verificar notificações:", error);
     return false;

@@ -54,25 +54,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const checkNotifications = async (userId: string) => {
     try {
-      // Utilizando a função RPC check_unread_notifications
-      const { data, error } = await supabase.rpc('check_unread_notifications', { user_id: userId });
+      // Consulta direta em vez de RPC
+      const { data, error, count } = await supabase
+        .from('notifications')
+        .select('*', { count: 'exact' })
+        .eq('user_id', userId)
+        .eq('read', false)
+        .limit(1);
       
-      if (!error && data !== null) {
-        setHasNotifications(data > 0);
+      if (!error && count !== null) {
+        setHasNotifications(count > 0);
       } else {
-        // Fallback caso a função RPC não exista ainda
-        const { data: notificationsData, error: notificationsError } = await supabase
-          .from('notifications')
-          .select('id')
-          .eq('user_id', userId)
-          .eq('read', false)
-          .limit(1);
-        
-        if (!notificationsError && notificationsData && notificationsData.length > 0) {
-          setHasNotifications(true);
-        } else {
-          setHasNotifications(false);
-        }
+        setHasNotifications(false);
       }
     } catch (error) {
       console.error("Erro ao verificar notificações:", error);
