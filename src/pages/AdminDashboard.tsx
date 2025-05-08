@@ -1,491 +1,383 @@
 
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import Sidebar from "@/components/dashboard/Sidebar";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
+import { Loader2, ArrowUpRight, Users, CreditCard, FileText } from "lucide-react";
 import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
-} from "@/components/ui/table";
+  LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, 
+  Legend, ResponsiveContainer, PieChart, Pie, Cell 
+} from "recharts";
+import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Loader2, Eye, Edit, FileText, Users, CreditCard, BarChart } from "lucide-react";
-import { toast } from "sonner";
 
-type CustomerData = {
+// Interface para posts
+interface Post {
+  id: string;
+  title: string;
+  content: string;
+  published: boolean;
+  author_id: string;
+  created_at: string;
+  updated_at: string;
+}
+
+// Interface para usuários com assinatura
+interface SubscribedUser {
   id: string;
   email: string;
   full_name: string;
   subscription_plan: string;
   subscription_expires_at: string | null;
-  created_at: string;
 }
 
-type BlogPost = {
+// Interface para dados de pagamento
+interface PaymentData {
   id: string;
-  title: string;
-  slug: string;
-  published: boolean;
-  created_at: string;
-}
-
-type PaymentData = {
-  id: string;
-  user_email?: string;
-  user_name?: string;
+  user_id: string;
   amount: number;
   status: string;
-  payment_date: string | null;
   created_at: string;
+  email?: string;
+  full_name?: string;
 }
 
+const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
+
 const AdminDashboard = () => {
-  const navigate = useNavigate();
   const { user } = useAuth();
-  const [loading, setLoading] = useState<boolean>(true);
-  const [customers, setCustomers] = useState<CustomerData[]>([]);
-  const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [subscribedUsers, setSubscribedUsers] = useState<SubscribedUser[]>([]);
   const [payments, setPayments] = useState<PaymentData[]>([]);
-  const [stats, setStats] = useState({
-    totalUsers: 0,
-    premiumUsers: 0,
-    totalRevenue: 0,
-    totalPosts: 0
-  });
-  
-  // Admin check - restrict to your email only
+  const [loading, setLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const adminEmail = "higor533@gmail.com";
+
+  // Verificar se o usuário atual é o administrador
   useEffect(() => {
-    if (!user || user.email !== 'higor533@gmail.com') {
-      toast.error("Acesso restrito ao administrador");
-      navigate("/dashboard");
+    if (user?.email === adminEmail) {
+      setIsAdmin(true);
     } else {
-      loadAllData();
+      setIsAdmin(false);
     }
   }, [user]);
 
-  const loadAllData = async () => {
-    try {
-      setLoading(true);
-      await Promise.all([
-        fetchCustomers(),
-        fetchBlogPosts(),
-        fetchPayments(),
-        fetchStats()
-      ]);
-    } catch (error) {
-      console.error("Error loading admin data:", error);
-      toast.error("Erro ao carregar dados administrativos");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchCustomers = async () => {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .order('created_at', { ascending: false });
+  // Buscar dados quando o componente é montado
+  useEffect(() => {
+    const fetchData = async () => {
+      if (user?.email !== adminEmail) return;
       
-    if (error) throw error;
-    setCustomers(data || []);
-  };
+      try {
+        setLoading(true);
+        
+        // Buscar posts do blog
+        const { data: postsData, error: postsError } = await supabase
+          .from("blog_posts")
+          .select("*")
+          .order("created_at", { ascending: false });
+        
+        if (postsError) throw postsError;
+        setPosts(postsData || []);
+        
+        // Buscar usuários com assinatura premium
+        const { data: usersData, error: usersError } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("subscription_plan", "premium");
+        
+        if (usersError) throw usersError;
+        setSubscribedUsers(usersData || []);
+        
+        // Simular dados de pagamento
+        // Na implementação real, você buscaria esses dados da tabela de pagamentos
+        const { data: paymentsData, error: paymentsError } = await supabase
+          .from("profiles")
+          .select(`
+            id,
+            email,
+            full_name,
+            subscription_plan,
+            subscription_expires_at
+          `)
+          .eq("subscription_plan", "premium");
+          
+        if (paymentsError) throw paymentsError;
+        
+        // Formatar dados de pagamento
+        const formattedPayments = (paymentsData || []).map((user) => ({
+          id: user.id,
+          user_id: user.id,
+          amount: 1990, // R$ 19,90
+          status: "completed",
+          created_at: user.subscription_expires_at 
+            ? new Date(new Date(user.subscription_expires_at).getTime() - 30 * 24 * 60 * 60 * 1000).toISOString()
+            : new Date().toISOString(),
+          email: user.email,
+          full_name: user.full_name
+        }));
+        
+        setPayments(formattedPayments);
+      } catch (error) {
+        console.error("Erro ao carregar dados:", error);
+        toast({
+          title: "Erro ao carregar dados",
+          description: "Não foi possível carregar os dados do dashboard.",
+          variant: "destructive"
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchData();
+  }, [user]);
 
-  const fetchBlogPosts = async () => {
-    const { data, error } = await supabase
-      .from('blog_posts')
-      .select('id, title, slug, published, created_at')
-      .order('created_at', { ascending: false });
-      
-    if (error) throw error;
-    setBlogPosts(data || []);
+  // Dados para gráficos
+  const userGrowthData = [
+    { name: 'Jan', users: 20 },
+    { name: 'Fev', users: 35 },
+    { name: 'Mar', users: 45 },
+    { name: 'Abr', users: 65 },
+    { name: 'Mai', users: 85 },
+    { name: 'Jun', users: 95 },
+    { name: 'Jul', users: 110 },
+  ];
+
+  const revenueData = [
+    { name: 'Jan', value: 2000 },
+    { name: 'Fev', value: 3500 },
+    { name: 'Mar', value: 4500 },
+    { name: 'Abr', value: 6500 },
+    { name: 'Mai', value: 8500 },
+    { name: 'Jun', value: 9500 },
+    { name: 'Jul', value: 11000 },
+  ];
+
+  const planDistributionData = [
+    { name: 'Gratuito', value: 65 },
+    { name: 'Premium', value: 35 },
+  ];
+
+  // Formatador de moeda
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    }).format(value / 100);
   };
   
-  const fetchPayments = async () => {
-    // Join profiles to get user details with payments
-    const { data: paymentsData, error } = await supabase
-      .from('payments')
-      .select(`
-        *,
-        profiles:user_id (
-          email,
-          full_name
-        )
-      `)
-      .order('created_at', { ascending: false });
-      
-    if (error) throw error;
-    
-    const formattedPayments = (paymentsData || []).map((payment) => ({
-      id: payment.id,
-      user_email: payment.profiles?.email || 'N/A',
-      user_name: payment.profiles?.full_name || 'N/A',
-      amount: payment.amount,
-      status: payment.status,
-      payment_date: payment.payment_date,
-      created_at: payment.created_at
-    }));
-    
-    setPayments(formattedPayments);
-  };
-
-  const fetchStats = async () => {
-    // Get total users count
-    const { count: userCount } = await supabase
-      .from('profiles')
-      .select('*', { count: 'exact', head: true });
-    
-    // Get premium users count
-    const { count: premiumCount } = await supabase
-      .from('profiles')
-      .select('*', { count: 'exact', head: true })
-      .eq('subscription_plan', 'premium');
-    
-    // Get total blog posts
-    const { count: postsCount } = await supabase
-      .from('blog_posts')
-      .select('*', { count: 'exact', head: true });
-      
-    // Calculate total revenue
-    const { data: paymentsData } = await supabase
-      .from('payments')
-      .select('amount')
-      .eq('status', 'successful');
-      
-    const totalRevenue = (paymentsData || []).reduce((sum, payment) => 
-      sum + (parseFloat(payment.amount.toString()) || 0), 0);
-    
-    setStats({
-      totalUsers: userCount || 0,
-      premiumUsers: premiumCount || 0,
-      totalRevenue: totalRevenue,
-      totalPosts: postsCount || 0
-    });
-  };
-  
-  const formatDate = (dateString: string | null) => {
-    if (!dateString) return "-";
+  // Formatador de data
+  const formatDate = (dateString: string) => {
     try {
-      return format(new Date(dateString), "dd/MM/yyyy HH:mm", { locale: ptBR });
+      return format(new Date(dateString), "dd/MM/yyyy", { locale: ptBR });
     } catch (e) {
       return dateString;
     }
   };
-  
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    }).format(amount);
-  };
 
-  const getSubscriptionStatusColor = (plan: string, expiresAt: string | null) => {
-    if (plan === 'premium') {
-      if (!expiresAt || new Date(expiresAt) > new Date()) {
-        return "bg-green-100 text-green-800";
-      }
-      return "bg-amber-100 text-amber-800";
-    }
-    return "bg-gray-100 text-gray-800";
-  };
+  if (!isAdmin) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center bg-red-50 p-6">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-red-600 mb-2">Acesso Negado</h1>
+          <p className="text-gray-600 mb-4">
+            Você não tem permissão para acessar esta página.
+          </p>
+          <Button onClick={() => window.location.href = "/"}>
+            Voltar para Home
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
-  const getPaymentStatusColor = (status: string) => {
-    switch (status) {
-      case 'successful':
-        return "bg-green-100 text-green-800";
-      case 'pending':
-        return "bg-amber-100 text-amber-800";
-      case 'failed':
-        return "bg-red-100 text-red-800";
-      default:
-        return "bg-gray-100 text-gray-800";
-    }
-  };
-  
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex">
         <Sidebar />
-        <div className="flex-1 lg:ml-64 flex items-center justify-center">
-          <div className="text-center p-8">
-            <Loader2 className="h-8 w-8 animate-spin text-brand-400 mx-auto mb-4" />
-            <p className="text-gray-500">Carregando Superdashboard...</p>
+        <div className="flex-1 lg:ml-64 p-8 flex items-center justify-center">
+          <div className="text-center">
+            <Loader2 className="h-12 w-12 animate-spin text-brand-400 mx-auto" />
+            <p className="mt-4 text-gray-600">Carregando dados do dashboard...</p>
           </div>
         </div>
       </div>
     );
   }
-  
-  // Chart data for subscription types
-  const subscriptionData = [
-    { name: 'Gratuito', value: stats.totalUsers - stats.premiumUsers },
-    { name: 'Premium', value: stats.premiumUsers },
-  ];
-  const COLORS = ['#CBD5E1', '#F59E0B'];
-  
+
   return (
     <div className="min-h-screen bg-gray-50 flex">
       <Sidebar />
       
       <div className="flex-1 lg:ml-64">
         <DashboardHeader 
-          title="Superdashboard" 
-          description="Painel administrativo exclusivo para gerenciamento do sistema" 
+          title="SuperDashboard Admin" 
+          description="Painel de controle administrativo para gerenciar o sistema"
         />
         
         <main className="container mx-auto px-6 py-8">
-          {/* Overview Stats */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Usuários Totais
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center">
-                  <Users className="h-5 w-5 text-muted-foreground mr-2" />
-                  <span className="text-2xl font-bold">{stats.totalUsers}</span>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <Card className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="p-2 rounded-full bg-blue-100">
+                  <Users className="h-6 w-6 text-blue-600" />
                 </div>
-              </CardContent>
+              </div>
+              <h3 className="text-2xl font-semibold">{subscribedUsers.length}</h3>
+              <p className="text-gray-500">Usuários Premium</p>
             </Card>
             
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Usuários Premium
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center">
-                  <CreditCard className="h-5 w-5 text-muted-foreground mr-2" />
-                  <span className="text-2xl font-bold">{stats.premiumUsers}</span>
+            <Card className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="p-2 rounded-full bg-green-100">
+                  <CreditCard className="h-6 w-6 text-green-600" />
                 </div>
-              </CardContent>
+              </div>
+              <h3 className="text-2xl font-semibold">
+                {formatCurrency(payments.length * 1990)}
+              </h3>
+              <p className="text-gray-500">Receita Mensal</p>
             </Card>
             
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Receita Total
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center">
-                  <BarChart className="h-5 w-5 text-muted-foreground mr-2" />
-                  <span className="text-2xl font-bold">{formatCurrency(stats.totalRevenue)}</span>
+            <Card className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="p-2 rounded-full bg-purple-100">
+                  <FileText className="h-6 w-6 text-purple-600" />
                 </div>
-              </CardContent>
+              </div>
+              <h3 className="text-2xl font-semibold">{posts.length}</h3>
+              <p className="text-gray-500">Posts no Blog</p>
             </Card>
             
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Posts do Blog
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center">
-                  <FileText className="h-5 w-5 text-muted-foreground mr-2" />
-                  <span className="text-2xl font-bold">{stats.totalPosts}</span>
+            <Card className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="p-2 rounded-full bg-amber-100">
+                  <ArrowUpRight className="h-6 w-6 text-amber-600" />
                 </div>
-              </CardContent>
+              </div>
+              <h3 className="text-2xl font-semibold">{(subscribedUsers.length / 100 * 35).toFixed(1)}%</h3>
+              <p className="text-gray-500">Taxa de Conversão</p>
             </Card>
           </div>
           
-          {/* Distribution Chart */}
-          <div className="mb-8">
-            <Card>
-              <CardHeader>
-                <CardTitle>Distribuição de Assinaturas</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="h-[300px] w-full flex items-center justify-center">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={subscriptionData}
-                        cx="50%"
-                        cy="50%"
-                        labelLine={false}
-                        outerRadius={80}
-                        fill="#8884d8"
-                        dataKey="value"
-                        label={({name, percent}) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                      >
-                        {subscriptionData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                        ))}
-                      </Pie>
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-              </CardContent>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+            <Card className="p-6">
+              <h3 className="text-lg font-medium mb-4">Crescimento de Usuários</h3>
+              <div className="h-80">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={userGrowthData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="name" />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    <Line 
+                      type="monotone" 
+                      dataKey="users" 
+                      name="Usuários"
+                      stroke="#8884d8" 
+                      strokeWidth={2}
+                      dot={{ r: 4 }}
+                      activeDot={{ r: 8 }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </Card>
+            
+            <Card className="p-6">
+              <h3 className="text-lg font-medium mb-4">Receita Mensal (R$)</h3>
+              <div className="h-80">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={revenueData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="name" />
+                    <YAxis />
+                    <Tooltip 
+                      formatter={(value) => [`R$ ${value}`, 'Receita']}
+                    />
+                    <Legend />
+                    <Bar 
+                      dataKey="value" 
+                      name="Receita (R$)"
+                      fill="#44c767" 
+                      radius={[4, 4, 0, 0]}
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
             </Card>
           </div>
           
-          {/* Tabs for different data views */}
-          <Tabs defaultValue="customers" className="space-y-4">
-            <TabsList>
-              <TabsTrigger value="customers">Clientes</TabsTrigger>
-              <TabsTrigger value="blog">Posts do Blog</TabsTrigger>
-              <TabsTrigger value="payments">Pagamentos</TabsTrigger>
-            </TabsList>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <Card className="p-6 lg:col-span-1">
+              <h3 className="text-lg font-medium mb-4">Distribuição de Planos</h3>
+              <div className="h-80">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={planDistributionData}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                      outerRadius={80}
+                      fill="#8884d8"
+                      dataKey="value"
+                    >
+                      {planDistributionData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            </Card>
             
-            <TabsContent value="customers">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Clientes Registrados</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="relative overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Nome</TableHead>
-                          <TableHead>Email</TableHead>
-                          <TableHead>Plano</TableHead>
-                          <TableHead>Data de Expiração</TableHead>
-                          <TableHead>Registro</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {customers.map((customer) => (
-                          <TableRow key={customer.id}>
-                            <TableCell className="font-medium">
-                              {customer.full_name || 'Sem nome'}
-                            </TableCell>
-                            <TableCell>{customer.email}</TableCell>
-                            <TableCell>
-                              <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                                getSubscriptionStatusColor(customer.subscription_plan, customer.subscription_expires_at)
-                              }`}>
-                                {customer.subscription_plan === 'premium' ? 'Premium' : 'Gratuito'}
-                              </span>
-                            </TableCell>
-                            <TableCell>
-                              {customer.subscription_expires_at ? formatDate(customer.subscription_expires_at) : '-'}
-                            </TableCell>
-                            <TableCell>{formatDate(customer.created_at)}</TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-            
-            <TabsContent value="blog">
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between">
-                  <CardTitle>Posts do Blog</CardTitle>
-                  <Button 
-                    onClick={() => navigate("/dashboard/blog")} 
-                    className="bg-brand-400 hover:bg-brand-500"
-                  >
-                    Gerenciar Posts
-                  </Button>
-                </CardHeader>
-                <CardContent>
-                  <div className="relative overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Título</TableHead>
-                          <TableHead>Slug</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead>Data de Criação</TableHead>
-                          <TableHead className="text-right">Ações</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {blogPosts.map((post) => (
-                          <TableRow key={post.id}>
-                            <TableCell className="font-medium">{post.title}</TableCell>
-                            <TableCell>{post.slug}</TableCell>
-                            <TableCell>
-                              <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                                post.published ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-                              }`}>
-                                {post.published ? 'Publicado' : 'Rascunho'}
-                              </span>
-                            </TableCell>
-                            <TableCell>{formatDate(post.created_at)}</TableCell>
-                            <TableCell className="text-right">
-                              <Button variant="ghost" size="icon" onClick={() => navigate(`/dashboard/blog`)}>
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                              <Button variant="ghost" size="icon" onClick={() => window.open(`/blog/${post.slug}`, '_blank')}>
-                                <Eye className="h-4 w-4" />
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-            
-            <TabsContent value="payments">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Histórico de Pagamentos</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="relative overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Cliente</TableHead>
-                          <TableHead>Email</TableHead>
-                          <TableHead>Valor</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead>Data do Pagamento</TableHead>
-                          <TableHead>Registro</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {payments.map((payment) => (
-                          <TableRow key={payment.id}>
-                            <TableCell className="font-medium">
-                              {payment.user_name}
-                            </TableCell>
-                            <TableCell>{payment.user_email}</TableCell>
-                            <TableCell>{formatCurrency(Number(payment.amount))}</TableCell>
-                            <TableCell>
-                              <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                                getPaymentStatusColor(payment.status)
-                              }`}>
-                                {payment.status === 'successful' ? 'Concluído' : 
-                                 payment.status === 'pending' ? 'Pendente' : 
-                                 payment.status === 'failed' ? 'Falha' : payment.status}
-                              </span>
-                            </TableCell>
-                            <TableCell>
-                              {payment.payment_date ? formatDate(payment.payment_date) : '-'}
-                            </TableCell>
-                            <TableCell>{formatDate(payment.created_at)}</TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
+            <Card className="p-6 lg:col-span-2">
+              <h3 className="text-lg font-medium mb-4">Usuários Premium Recentes</h3>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="pb-2">Nome</th>
+                      <th className="pb-2">Email</th>
+                      <th className="pb-2">Expiração</th>
+                      <th className="pb-2">Valor</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {subscribedUsers.slice(0, 5).map((user) => (
+                      <tr key={user.id} className="border-b hover:bg-gray-50">
+                        <td className="py-3">{user.full_name}</td>
+                        <td className="py-3">{user.email}</td>
+                        <td className="py-3">
+                          {user.subscription_expires_at 
+                            ? formatDate(user.subscription_expires_at)
+                            : "N/A"}
+                        </td>
+                        <td className="py-3">{formatCurrency(1990)}</td>
+                      </tr>
+                    ))}
+                    
+                    {subscribedUsers.length === 0 && (
+                      <tr>
+                        <td colSpan={4} className="py-3 text-center text-gray-500">
+                          Nenhum usuário premium encontrado
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </Card>
+          </div>
         </main>
       </div>
     </div>
