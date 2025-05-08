@@ -17,6 +17,7 @@ import Register from "./pages/Register";
 import Subscription from "./pages/Subscription";
 import BlogPosts from "./pages/BlogPosts";
 import Notifications from "./pages/Notifications";
+import AdminDashboard from "./pages/AdminDashboard";
 
 const queryClient = new QueryClient();
 
@@ -42,6 +43,7 @@ const App = () => (
               <Route path="/dashboard/assinatura" element={<Subscription />} />
               <Route path="/dashboard/blog" element={<BlogPosts />} />
               <Route path="/dashboard/notificacoes" element={<Notifications />} />
+              <Route path="/admin-dashboard" element={<AdminDashboard />} />
             </Route>
             
             {/* Rota 404 */}

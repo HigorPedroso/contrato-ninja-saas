@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from "react";
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
-import { Home, FileText, Plus, Users, Settings, LogOut, Bell, Newspaper } from "lucide-react";
+import { Home, FileText, Plus, Users, Settings, LogOut, Bell, Newspaper, Shield } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -57,6 +57,9 @@ const Sidebar = () => {
     
     return 'U';
   };
+
+  // Check if user is admin (your email)
+  const isAdmin = user?.email === 'higor533@gmail.com';
 
   return (
     <div className="lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-64 lg:flex-col bg-white border-r border-gray-200">
@@ -218,6 +221,28 @@ const Sidebar = () => {
               >
                 <Newspaper className="h-4 w-4" />
                 <span>Blog</span>
+              </NavLink>
+            </li>
+          )}
+          
+          {/* Admin Section - Only visible to your email */}
+          {isAdmin && (
+            <li className="mt-4 pt-4 border-t border-gray-200">
+              <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider px-4 mb-2">
+                Admin
+              </div>
+              <NavLink
+                to="/admin-dashboard"
+                className={({ isActive }) =>
+                  `flex items-center space-x-3 py-2 px-4 rounded-lg transition duration-200 ${isActive
+                    ? "bg-gray-100 text-brand-500 font-medium"
+                    : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
+                  }`
+                }
+                onClick={closeMenu}
+              >
+                <Shield className="h-4 w-4" />
+                <span>Superdashboard</span>
               </NavLink>
             </li>
           )}

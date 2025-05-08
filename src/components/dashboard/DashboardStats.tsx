@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { FileText, Users, Clock, Download } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -31,12 +30,12 @@ const DashboardStats = () => {
           .eq("user_id", user.id)
           .not("client_email", "is", null);
 
-        // Número estimado de downloads (baseado em visualizações de contrato finalizadas)
+        // Número estimado de downloads (baseado em visualizações de contrato com status concluído)
         const { data: downloads, count: downloadsCount, error: downloadsError } = await supabase
           .from("contracts")
           .select("*", { count: "exact" })
           .eq("user_id", user.id)
-          .eq("status", "finalizado");
+          .eq("status", "active"); // Alterado de 'finalizado' para 'active' para corresponder ao enum contract_status
 
         // Calcular estatísticas
         const contratosTotal = contratosCount || 0;
