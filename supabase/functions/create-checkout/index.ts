@@ -104,13 +104,13 @@ serve(async (req) => {
       );
     }
 
-    // Obter o preço do Stripe para o plano premium
-    const stripePrice = Deno.env.get("STRIPE_PREMIUM_PRICE_ID");
-    if (!stripePrice) {
+    // Obter o preço do Stripe
+    const stripePriceId = Deno.env.get("STRIPE_PREMIUM_PRICE_ID");
+    if (!stripePriceId) {
       throw new Error("STRIPE_PREMIUM_PRICE_ID não está configurada");
     }
     
-    console.log("Usando preço do Stripe:", stripePrice);
+    console.log("Usando preço do Stripe:", stripePriceId);
 
     // Criar uma sessão de checkout do Stripe
     const origin = req.headers.get("origin") || "";
@@ -119,7 +119,7 @@ serve(async (req) => {
       payment_method_types: ["card"],
       line_items: [
         {
-          price: stripePrice,
+          price: stripePriceId,
           quantity: 1,
         },
       ],
