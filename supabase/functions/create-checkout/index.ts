@@ -36,6 +36,7 @@ serve(async (req) => {
     }
 
     const user = userData.user;
+    console.log("Usuário autenticado:", user.id);
 
     // Configurar Stripe
     const stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY");
@@ -53,10 +54,11 @@ serve(async (req) => {
       limit: 1,
     });
 
-    let customerId: string | undefined;
+    let customerId;
 
     if (customers.data.length > 0) {
       customerId = customers.data[0].id;
+      console.log("Cliente existente encontrado:", customerId);
     } else {
       // Criar um novo cliente no Stripe
       const customer = await stripe.customers.create({
@@ -66,15 +68,14 @@ serve(async (req) => {
         },
       });
       customerId = customer.id;
+      console.log("Novo cliente criado:", customerId);
     }
 
     // Determinar o preço com base na requisição
     const { priceId } = await req.json();
-    const priceIdToUse = priceId === "price_premium" 
-      ? Deno.env.get("STRIPE_PREMIUM_PRICE_ID") || "price_1234" // Use o preço real do Stripe
-      : "price_free"; // Plano gratuito não usa o Stripe
+    console.log("Plano selecionado:", priceId);
     
-    if (priceIdToUse === "price_free") {
+    if (priceId === "price_free") {
       // Para o plano gratuito, não precisamos criar uma sessão do Stripe
       // Atualizamos diretamente o perfil do usuário
       const supabaseAdmin = createClient(
@@ -88,6 +89,8 @@ serve(async (req) => {
         subscription_expires_at: null,
       }).eq("id", user.id);
       
+      console.log("Plano gratuito ativado para o usuário:", user.id);
+      
       return new Response(
         JSON.stringify({ 
           success: true, 
@@ -100,6 +103,14 @@ serve(async (req) => {
         }
       );
     }
+
+    // Obter o preço real do Stripe para o plano premium
+    const priceIdToUse = Deno.env.get("STRIPE_PREMIUM_PRICE_ID");
+    if (!priceIdToUse) {
+      throw new Error("STRIPE_PREMIUM_PRICE_ID não está configurada");
+    }
+    
+    console.log("Usando preço do Stripe:", priceIdToUse);
 
     // Criar uma sessão de checkout do Stripe
     const origin = req.headers.get("origin") || "";
@@ -117,6 +128,9 @@ serve(async (req) => {
       cancel_url: `${origin}/dashboard/assinatura?canceled=true`,
     });
 
+    console.log("Sessão de checkout criada:", session.id);
+    console.log("URL de checkout:", session.url);
+
     return new Response(
       JSON.stringify({ url: session.url }),
       {
@@ -125,6 +139,7 @@ serve(async (req) => {
       }
     );
   } catch (error) {
+    console.error("Erro na função create-checkout:", error);
     const errorMessage = error instanceof Error ? error.message : "Erro desconhecido";
     return new Response(
       JSON.stringify({ error: errorMessage }),

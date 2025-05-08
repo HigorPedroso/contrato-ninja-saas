@@ -1,41 +1,118 @@
 
+import { useEffect, useState } from "react";
 import { FileText, Users, Clock, Download } from "lucide-react";
-
-const stats = [
-  {
-    name: "Contratos Ativos",
-    value: "12",
-    icon: <FileText className="h-5 w-5 text-brand-400" />,
-    change: "+20%",
-    changeDirection: "up",
-  },
-  {
-    name: "Downloads Realizados",
-    value: "48",
-    icon: <Download className="h-5 w-5 text-green-500" />,
-    change: "+35%",
-    changeDirection: "up",
-  },
-  {
-    name: "Clientes Registrados",
-    value: "8",
-    icon: <Users className="h-5 w-5 text-indigo-500" />,
-    change: "+12%",
-    changeDirection: "up",
-  },
-  {
-    name: "Economia de Tempo",
-    value: "43h",
-    icon: <Clock className="h-5 w-5 text-amber-500" />,
-    change: "",
-    changeDirection: "none",
-  },
-];
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 const DashboardStats = () => {
+  const { user } = useAuth();
+  const [stats, setStats] = useState({
+    contratos: { valor: "0", mudanca: "+0%", direcao: "none" },
+    downloads: { valor: "0", mudanca: "+0%", direcao: "none" },
+    clientes: { valor: "0", mudanca: "+0%", direcao: "none" },
+    economia: { valor: "0h", mudanca: "", direcao: "none" },
+  });
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      if (!user) return;
+
+      try {
+        // Buscar número de contratos
+        const { data: contratos, count: contratosCount, error: contratosError } = await supabase
+          .from("contracts")
+          .select("*", { count: "exact" })
+          .eq("user_id", user.id);
+
+        // Buscar número de clientes únicos
+        const { data: clientes, error: clientesError } = await supabase
+          .from("contracts")
+          .select("client_email")
+          .eq("user_id", user.id)
+          .not("client_email", "is", null);
+
+        // Número estimado de downloads (baseado em visualizações de contrato finalizadas)
+        const { data: downloads, count: downloadsCount, error: downloadsError } = await supabase
+          .from("contracts")
+          .select("*", { count: "exact" })
+          .eq("user_id", user.id)
+          .eq("status", "finalizado");
+
+        // Calcular estatísticas
+        const contratosTotal = contratosCount || 0;
+        
+        // Remover emails duplicados para ter o número real de clientes
+        const clientesUnicos = clientes ? new Set(clientes.map(c => c.client_email)).size : 0;
+        
+        const downloadsTotal = downloadsCount || 0;
+        
+        // Economia de tempo estimada (assumindo que cada contrato economiza 2 horas)
+        const economiaHoras = contratosTotal * 2;
+
+        setStats({
+          contratos: { 
+            valor: contratosTotal.toString(), 
+            mudanca: "+20%", 
+            direcao: "up" 
+          },
+          downloads: { 
+            valor: downloadsTotal.toString(), 
+            mudanca: "+35%", 
+            direcao: "up" 
+          },
+          clientes: { 
+            valor: clientesUnicos.toString(), 
+            mudanca: "+12%", 
+            direcao: "up" 
+          },
+          economia: { 
+            valor: `${economiaHoras}h`, 
+            mudanca: "", 
+            direcao: "none" 
+          },
+        });
+      } catch (error) {
+        console.error("Erro ao buscar estatísticas:", error);
+      }
+    };
+
+    fetchStats();
+  }, [user]);
+
+  const statsItems = [
+    {
+      name: "Contratos Ativos",
+      value: stats.contratos.valor,
+      icon: <FileText className="h-5 w-5 text-brand-400" />,
+      change: stats.contratos.mudanca,
+      changeDirection: stats.contratos.direcao,
+    },
+    {
+      name: "Downloads Realizados",
+      value: stats.downloads.valor,
+      icon: <Download className="h-5 w-5 text-green-500" />,
+      change: stats.downloads.mudanca,
+      changeDirection: stats.downloads.direcao,
+    },
+    {
+      name: "Clientes Registrados",
+      value: stats.clientes.valor,
+      icon: <Users className="h-5 w-5 text-indigo-500" />,
+      change: stats.clientes.mudanca,
+      changeDirection: stats.clientes.direcao,
+    },
+    {
+      name: "Economia de Tempo",
+      value: stats.economia.valor,
+      icon: <Clock className="h-5 w-5 text-amber-500" />,
+      change: stats.economia.mudanca,
+      changeDirection: stats.economia.direcao,
+    },
+  ];
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-      {stats.map((stat) => (
+      {statsItems.map((stat) => (
         <div
           key={stat.name}
           className="bg-white p-6 rounded-lg border border-gray-200 hover:shadow-md transition-shadow animate-fade-in"

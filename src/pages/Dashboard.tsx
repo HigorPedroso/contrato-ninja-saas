@@ -12,33 +12,14 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 
 const Dashboard = () => {
-  const { user } = useAuth();
-  const [profile, setProfile] = useState<any>(null);
-
+  const { user, profile, refreshProfile } = useAuth();
+  
+  // Garantir que o perfil do usuário esteja atualizado
   useEffect(() => {
-    const getProfile = async () => {
-      if (!user) return;
-
-      try {
-        const { data, error } = await supabase
-          .from("profiles")
-          .select("*")
-          .eq("id", user.id)
-          .single();
-
-        if (error) {
-          console.error("Error fetching profile:", error);
-          return;
-        }
-
-        setProfile(data);
-      } catch (error) {
-        console.error("Unexpected error:", error);
-      }
-    };
-
-    getProfile();
-  }, [user]);
+    if (user) {
+      refreshProfile();
+    }
+  }, [user, refreshProfile]);
 
   const getUserName = () => {
     if (profile?.full_name) return profile.full_name.split(' ')[0];
