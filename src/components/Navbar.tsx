@@ -20,7 +20,9 @@ const Navbar = () => {
       <div className="container mx-auto px-6 py-3">
         <div className="flex items-center justify-between">
           <div className="text-xl font-semibold">
-            <Link to="/">ContratosOnline</Link>
+            <Link to="/">
+              <span className="text-brand-400">Contrato</span>Flash
+            </Link>
           </div>
 
           <div className="lg:hidden">
@@ -30,9 +32,7 @@ const Navbar = () => {
           </div>
 
           <div
-            className={`hidden lg:flex items-center space-x-6 ${
-              isMenuOpen ? "block" : "hidden"
-            }`}
+            className={`hidden lg:flex items-center space-x-6`}
           >
             <Link to="/" className="hover:text-gray-500">
               Início

@@ -207,10 +207,10 @@ const Sidebar = () => {
               </span>
             </NavLink>
           </li>
-          {isSubscribed && (
+          {isAdmin && (
             <li>
               <NavLink
-                to="/dashboard/blog"
+                to="/admin/blog"
                 className={({ isActive }) =>
                   `flex items-center space-x-3 py-2 px-4 rounded-lg transition duration-200 ${isActive
                     ? "bg-gray-100 text-brand-500 font-medium"
@@ -220,7 +220,7 @@ const Sidebar = () => {
                 onClick={closeMenu}
               >
                 <Newspaper className="h-4 w-4" />
-                <span>Blog</span>
+                <span>Gerenciar Blog</span>
               </NavLink>
             </li>
           )}
@@ -232,7 +232,7 @@ const Sidebar = () => {
                 Admin
               </div>
               <NavLink
-                to="/admin-dashboard"
+                to="/admin"
                 className={({ isActive }) =>
                   `flex items-center space-x-3 py-2 px-4 rounded-lg transition duration-200 ${isActive
                     ? "bg-gray-100 text-brand-500 font-medium"

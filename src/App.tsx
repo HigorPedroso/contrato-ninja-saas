@@ -17,6 +17,7 @@ import AdminDashboard from "@/pages/AdminDashboard";
 import Subscription from "@/pages/Subscription";
 import Templates from "@/pages/Templates";
 import BlogPost from "@/pages/BlogPost";
+import Blog from "@/pages/Blog";
 import "./App.css";
 
 function App() {
@@ -28,7 +29,7 @@ function App() {
             <Route path="/" element={<Home />} />
             <Route path="/login" element={<Login />} />
             <Route path="/registro" element={<Register />} />
-            <Route path="/blog" element={<BlogPosts />} />
+            <Route path="/blog" element={<Blog />} />
             <Route path="/blog/:slug" element={<BlogPost />} />
             <Route path="/modelos" element={<Templates />} />
             
