@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { fetchContractTemplates, checkContractLimit } from "@/services/contracts";
@@ -221,7 +220,7 @@ const ContractForm = () => {
                         field.onChange(value);
                         handleTemplateChange(value);
                       }}
-                      value={field.value}
+                      value={field.value || undefined}
                     >
                       <FormControl>
                         <SelectTrigger>
@@ -229,7 +228,7 @@ const ContractForm = () => {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="">Criar do zero</SelectItem>
+                        <SelectItem value="create_new">Criar do zero</SelectItem>
                         {templates.map((template) => {
                           // Check if this is a premium template and user doesn't have premium
                           const isPremiumRestricted = template.is_premium && !isSubscribed;
