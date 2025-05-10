@@ -41,6 +41,8 @@ function App() {
             
             {/* Admin Routes */}
             <Route path="/admin" element={<ProtectedRoute adminOnly><AdminDashboard /></ProtectedRoute>} />
+            {/* Move blog management to admin section */}
+            <Route path="/admin/blog" element={<ProtectedRoute adminOnly><BlogPosts /></ProtectedRoute>} />
             
             {/* Catch All */}
             <Route path="*" element={<NotFound />} />

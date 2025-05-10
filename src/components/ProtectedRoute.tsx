@@ -1,10 +1,15 @@
 
-import { Navigate, Outlet, useLocation } from "react-router-dom";
+import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Loader2 } from "lucide-react";
 
-const ProtectedRoute = () => {
-  const { user, loading } = useAuth();
+interface ProtectedRouteProps {
+  children: React.ReactNode;
+  adminOnly?: boolean;
+}
+
+const ProtectedRoute = ({ children, adminOnly = false }: ProtectedRouteProps) => {
+  const { user, loading, profile } = useAuth();
   const location = useLocation();
 
   // Mostra estado de carregamento durante a verificação de autenticação
@@ -24,9 +29,14 @@ const ProtectedRoute = () => {
     // Salva a URL tentada para redirecionamento após login
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
+  
+  // Verifica se é uma rota de admin e se o usuário tem permissão
+  if (adminOnly && profile?.subscription_plan !== 'premium') {
+    return <Navigate to="/dashboard" replace />;
+  }
 
-  // Renderiza a rota protegida
-  return <Outlet />;
+  // Renderiza o conteúdo protegido
+  return <>{children}</>;
 };
 
 export default ProtectedRoute;

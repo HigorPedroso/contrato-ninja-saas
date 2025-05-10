@@ -137,7 +137,7 @@ const ContractForm = () => {
         content: values.content,
         amount: amount,
         user_id: userData.user?.id,
-        status: "draft",
+        status: "draft" as const, // Explicitly type this as a literal to satisfy TypeScript
       };
 
       const { data, error } = await supabase

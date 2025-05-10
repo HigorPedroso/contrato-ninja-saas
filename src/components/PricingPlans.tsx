@@ -31,9 +31,10 @@ const PricingPlans = () => {
       features: [
         "Contratos ilimitados",
         "Todos os modelos premium",
+        "Contratos de consultoria empresarial",
+        "Assinatura de contratos",
         "Personalização avançada",
         "Formatação com HTML",
-        "Criação de posts no blog",
         "Suporte prioritário",
         "Sem marca d'água nos PDFs"
       ],

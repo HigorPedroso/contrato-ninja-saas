@@ -1,6 +1,6 @@
 
 import { useEffect, useState } from "react";
-import { FileText, Download, Eye } from "lucide-react";
+import { FileText, Download, Eye, Edit, Check, AlertTriangle, X } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
@@ -11,20 +11,29 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { fetchUserContracts, fetchContractById, Contract } from "@/services/contracts";
+import { fetchUserContracts, fetchContractById, updateContractStatus, Contract } from "@/services/contracts";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "@/hooks/use-toast";
 import { jsPDF } from "jspdf";
 import parse from "html-react-parser";
+import { useAuth } from "@/contexts/AuthContext";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const ContractsList = () => {
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedContract, setSelectedContract] = useState<any>(null);
   const [openDialog, setOpenDialog] = useState(false);
+  const [signatureDialog, setSignatureDialog] = useState(false);
+  const { isSubscribed } = useAuth();
 
   useEffect(() => {
     const loadContracts = async () => {
@@ -50,7 +59,7 @@ const ContractsList = () => {
     if (!content) return "";
     
     // Replace \n with <br> for proper line breaks
-    let formattedContent = content.replace(/\\n/g, '<br>');
+    let formattedContent = content.replace(/\\n/g, '<br>').replace(/\n/g, '<br>');
     
     // Return formatted content ready to be parsed
     return formattedContent;
@@ -131,6 +140,33 @@ const ContractsList = () => {
     }
   };
 
+  const handleStatusUpdate = async (contractId: string, newStatus: 'draft' | 'active' | 'expired' | 'canceled') => {
+    const success = await updateContractStatus(contractId, newStatus);
+    if (success) {
+      // Update the local state to reflect the change
+      setContracts(contracts.map(contract => 
+        contract.id === contractId ? {...contract, status: newStatus} : contract
+      ));
+    }
+  };
+
+  // Function to open signature dialog for a contract
+  const openSignatureDialog = (contract: any) => {
+    setSelectedContract(contract);
+    setSignatureDialog(true);
+  };
+
+  // Check if contract type allows signature option
+  const canAddSignature = (contract: Contract) => {
+    const allowedTypes = ['Freelancer', 'Design', 'Consultoria'];
+    return allowedTypes.includes(contract.type);
+  };
+
+  // Function to check if the contract type is restricted to premium users
+  const isPremiumRestricted = (contractType: string) => {
+    return contractType === 'Consultoria Empresarial' && !isSubscribed;
+  };
+
   return (
     <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
       <div className="p-6 border-b border-gray-200 flex justify-between items-center">
@@ -200,7 +236,12 @@ const ContractsList = () => {
                         {contract.title}
                       </span>
                     </TableCell>
-                    <TableCell>{contract.type}</TableCell>
+                    <TableCell>
+                      {contract.type}
+                      {isPremiumRestricted(contract.type) && (
+                        <span className="ml-2 text-xs text-amber-500 font-medium">(Premium)</span>
+                      )}
+                    </TableCell>
                     <TableCell>{contract.client_name || "-"}</TableCell>
                     <TableCell>{formatDate(contract.created_at)}</TableCell>
                     <TableCell>
@@ -239,6 +280,57 @@ const ContractsList = () => {
                         >
                           <Download className="h-4 w-4" />
                         </Button>
+                        
+                        {/* Status update dropdown */}
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" title="Atualizar status">
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem 
+                              onClick={() => handleStatusUpdate(contract.id, "active")}
+                              className="text-green-600"
+                              disabled={contract.status === "active"}
+                            >
+                              <Check className="h-4 w-4 mr-2" /> Marcar como Ativo
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              onClick={() => handleStatusUpdate(contract.id, "draft")}
+                              className="text-yellow-600"
+                              disabled={contract.status === "draft"}
+                            >
+                              <Edit className="h-4 w-4 mr-2" /> Marcar como Rascunho
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              onClick={() => handleStatusUpdate(contract.id, "expired")}
+                              className="text-gray-600"
+                              disabled={contract.status === "expired"}
+                            >
+                              <AlertTriangle className="h-4 w-4 mr-2" /> Marcar como Expirado
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              onClick={() => handleStatusUpdate(contract.id, "canceled")}
+                              className="text-red-600"
+                              disabled={contract.status === "canceled"}
+                            >
+                              <X className="h-4 w-4 mr-2" /> Marcar como Cancelado
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                        
+                        {/* Show signature option for freelancer and design contracts */}
+                        {canAddSignature(contract) && (
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            className="ml-2 text-xs"
+                            onClick={() => openSignatureDialog(contract)}
+                          >
+                            Assinar
+                          </Button>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>
@@ -296,6 +388,56 @@ const ContractsList = () => {
                   <Download className="h-4 w-4 mr-2" /> Baixar PDF
                 </Button>
               </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+      
+      {/* Dialog para assinatura do contrato */}
+      <Dialog open={signatureDialog} onOpenChange={setSignatureDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Assinatura de Contrato</DialogTitle>
+          </DialogHeader>
+          
+          {selectedContract && (
+            <div className="space-y-4">
+              <p>Você está prestes a assinar o contrato <strong>{selectedContract.title}</strong>.</p>
+              
+              <div className="p-4 bg-amber-50 rounded border border-amber-200">
+                <p className="text-amber-800 text-sm">
+                  Ao assinar este contrato, você concorda com todos os termos e condições estabelecidos neste documento.
+                </p>
+              </div>
+              
+              {/* Placeholder for signature field - would need a signature component in a real app */}
+              <div className="border-2 border-dashed border-gray-300 rounded-md h-32 flex items-center justify-center bg-gray-50">
+                <p className="text-gray-500">Digite seu nome completo para assinar</p>
+              </div>
+              
+              <Input 
+                placeholder="Seu nome completo" 
+                className="w-full"
+              />
+              
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setSignatureDialog(false)}>
+                  Cancelar
+                </Button>
+                <Button 
+                  className="bg-brand-400 hover:bg-brand-500"
+                  onClick={() => {
+                    toast({
+                      title: "Contrato assinado",
+                      description: "O contrato foi assinado com sucesso."
+                    });
+                    setSignatureDialog(false);
+                    handleStatusUpdate(selectedContract.id, "active");
+                  }}
+                >
+                  Assinar Contrato
+                </Button>
+              </DialogFooter>
             </div>
           )}
         </DialogContent>
