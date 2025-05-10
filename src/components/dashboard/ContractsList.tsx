@@ -18,6 +18,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "@/hooks/use-toast";
 import { jsPDF } from "jspdf";
+import parse from "html-react-parser";
 
 const ContractsList = () => {
   const [contracts, setContracts] = useState<Contract[]>([]);
@@ -44,14 +45,21 @@ const ContractsList = () => {
     }
   };
 
+  // Function to convert escaped HTML to actual HTML and handle line breaks
+  const formatContent = (content: string) => {
+    if (!content) return "";
+    
+    // Replace \n with <br> for proper line breaks
+    let formattedContent = content.replace(/\\n/g, '<br>');
+    
+    // Return formatted content ready to be parsed
+    return formattedContent;
+  };
+
   const viewContract = async (contractId: string) => {
     try {
       const contractData = await fetchContractById(contractId);
       if (contractData) {
-        // Substituir os \n por quebras de linha reais para exibição
-        if (contractData.content) {
-          contractData.content = contractData.content.replace(/\\n/g, '\n');
-        }
         setSelectedContract(contractData);
         setOpenDialog(true);
       }
@@ -95,16 +103,17 @@ const ContractsList = () => {
         doc.text(`Data: ${formatDate(contractData.created_at)}`, margin, yPosition);
         yPosition += 20;
         
-        // Adicionar conteúdo do contrato com quebras de linha
+        // Create a temporary div element to parse HTML content
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = formatContent(contractData.content);
+        const plainText = tempDiv.textContent || '';
+        
+        // Add the plain text content to the PDF with line breaks
         doc.setFontSize(11);
-        
-        // Substituir os \n por quebras de linha reais para o PDF
-        const formattedContent = contractData.content.replace(/\\n/g, '\n');
-        
-        const splitText = doc.splitTextToSize(formattedContent, pageWidth - (2 * margin));
+        const splitText = doc.splitTextToSize(plainText, pageWidth - (2 * margin));
         doc.text(splitText, margin, yPosition);
         
-        // Salvar o PDF
+        // Save the PDF
         doc.save(`contrato-${contractData.id}.pdf`);
         
         toast({
@@ -272,8 +281,11 @@ const ContractsList = () => {
               )}
               <p className="mb-4"><strong>Data:</strong> {formatDate(selectedContract.created_at)}</p>
               
-              <div className="mt-6 p-4 bg-gray-50 rounded-lg whitespace-pre-line border border-gray-200">
-                {selectedContract.content}
+              <div className="mt-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                {/* Use parse to render HTML content properly */}
+                <div className="whitespace-pre-line">
+                  {parse(formatContent(selectedContract.content))}
+                </div>
               </div>
               
               <div className="flex justify-end mt-6">

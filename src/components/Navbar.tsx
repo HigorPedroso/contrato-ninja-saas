@@ -1,200 +1,228 @@
 
-import { useState } from "react";
-import { Link, useNavigate, useLocation } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { X, Menu, User } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { useMobileMenu } from "@/hooks/use-mobile";
 
 const Navbar = () => {
-  const [isOpen, setIsOpen] = useState(false);
   const { user, signOut } = useAuth();
-  const navigate = useNavigate();
   const location = useLocation();
+  const { isOpen, toggleMenu, closeMenu } = useMobileMenu();
+  const [scrolled, setScrolled] = useState(false);
 
-  const toggleMenu = () => {
-    setIsOpen(!isOpen);
-  };
+  // Check if the current route is active
+  const isActive = (path: string) => location.pathname === path;
 
-  const handleLogout = async () => {
-    await signOut();
-    navigate("/");
-  };
+  // Listen for scroll events to add shadow on scroll
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > 10) {
+        setScrolled(true);
+      } else {
+        setScrolled(false);
+      }
+    };
 
-  const closeMenu = () => {
-    setIsOpen(false);
-  };
-
-  // Define available pages
-  const availableRoutes = [
-    { path: "/", label: "Home", always: true },
-    { path: "/blog", label: "Blog", always: true },
-    { path: "/precos", label: "Preços", always: true },
-    { path: "/dashboard", label: "Dashboard", auth: true },
-    { path: "/dashboard/contratos", label: "Meus Contratos", auth: true },
-    { path: "/dashboard/criar-contrato", label: "Criar Contrato", auth: true },
-    { path: "/login", label: "Entrar", auth: false },
-    { path: "/registro", label: "Criar Conta", auth: false },
-  ];
+    window.addEventListener("scroll", handleScroll);
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+    };
+  }, []);
 
   return (
-    <nav className="border-b border-gray-100 py-4 bg-white/90 backdrop-blur-sm sticky top-0 z-40">
-      <div className="container mx-auto px-4 flex justify-between items-center">
-        <Link to="/" className="flex items-center space-x-2">
-          <span className="font-bold text-xl">
-            <span className="text-brand-400">Contrato</span>Flash
-          </span>
-        </Link>
+    <header
+      className={`sticky top-0 z-50 w-full bg-white transition-all duration-200 ${
+        scrolled ? "shadow-sm" : ""
+      }`}
+    >
+      <div className="container mx-auto px-6">
+        <div className="flex h-16 items-center justify-between">
+          {/* Logo */}
+          <Link to="/" className="flex items-center" onClick={closeMenu}>
+            <span className="text-2xl font-bold text-gray-900">
+              Contra<span className="text-brand-400">to</span>
+            </span>
+          </Link>
 
-        {/* Desktop Menu */}
-        <div className="hidden md:flex items-center space-x-8">
-          <div className="flex space-x-6">
-            <Link to="/" className={`nav-link font-medium ${location.pathname === '/' ? 'text-brand-400' : ''}`}>
-              Home
+          {/* Desktop Navigation */}
+          <nav className="hidden md:flex items-center space-x-8">
+            <Link
+              to="/"
+              className={`text-sm font-medium transition-colors ${
+                isActive("/")
+                  ? "text-brand-400"
+                  : "text-gray-600 hover:text-gray-900"
+              }`}
+              onClick={closeMenu}
+            >
+              Início
             </Link>
-            <Link to="/blog" className={`nav-link font-medium ${location.pathname === '/blog' ? 'text-brand-400' : ''}`}>
+            <Link
+              to="/modelos"
+              className={`text-sm font-medium transition-colors ${
+                isActive("/modelos")
+                  ? "text-brand-400"
+                  : "text-gray-600 hover:text-gray-900"
+              }`}
+              onClick={closeMenu}
+            >
+              Modelos
+            </Link>
+            <Link
+              to="/blog"
+              className={`text-sm font-medium transition-colors ${
+                isActive("/blog")
+                  ? "text-brand-400"
+                  : "text-gray-600 hover:text-gray-900"
+              }`}
+              onClick={closeMenu}
+            >
               Blog
             </Link>
-            <Link to="/precos" className={`nav-link font-medium ${location.pathname.includes('/precos') ? 'text-brand-400' : ''}`}>
-              Preços
-            </Link>
-          </div>
+          </nav>
 
-          <div className="flex items-center space-x-4">
+          {/* Desktop Auth Buttons */}
+          <div className="hidden md:flex items-center space-x-4">
             {user ? (
               <>
                 <Link to="/dashboard">
-                  <Button variant="outline" className="font-medium">
-                    Dashboard
-                  </Button>
+                  <Button variant="outline">Dashboard</Button>
                 </Link>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="rounded-full">
-                      <User size={18} />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuLabel>Minha Conta</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem asChild>
-                      <Link to="/dashboard">Dashboard</Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link to="/dashboard/contratos">Meus Contratos</Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link to="/dashboard/criar-contrato">Criar Contrato</Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={handleLogout} className="text-red-500">
-                      Sair
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                <Button
+                  className="bg-brand-400 hover:bg-brand-500"
+                  onClick={() => signOut()}
+                >
+                  Sair
+                </Button>
               </>
             ) : (
               <>
                 <Link to="/login">
-                  <Button variant="outline" className="font-medium">
-                    Entrar
-                  </Button>
+                  <Button variant="outline">Entrar</Button>
                 </Link>
                 <Link to="/registro">
-                  <Button className="bg-brand-400 hover:bg-brand-500 text-white font-medium">
-                    Criar Conta
+                  <Button className="bg-brand-400 hover:bg-brand-500">
+                    Criar conta
                   </Button>
                 </Link>
               </>
             )}
           </div>
-        </div>
 
-        {/* Mobile Menu Button */}
-        <button
-          className="md:hidden text-gray-500 hover:text-gray-700"
-          onClick={toggleMenu}
-        >
-          {isOpen ? <X size={24} /> : <Menu size={24} />}
-        </button>
+          {/* Mobile Menu Button */}
+          <div className="flex md:hidden">
+            <button
+              onClick={toggleMenu}
+              className="text-gray-500 hover:text-gray-900 focus:outline-none"
+              aria-label={isOpen ? "Fechar menu" : "Abrir menu"}
+            >
+              {isOpen ? (
+                <svg
+                  className="w-6 h-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              ) : (
+                <svg
+                  className="w-6 h-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M4 6h16M4 12h16m-7 6h7"
+                  />
+                </svg>
+              )}
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* Mobile Menu */}
       {isOpen && (
-        <div className="md:hidden bg-white border-b border-gray-100 animate-slide-down">
-          <div className="container mx-auto px-4 py-4 flex flex-col space-y-4">
+        <div className="md:hidden border-t border-gray-200">
+          <div className="container mx-auto px-6 py-4 space-y-4">
             <Link
               to="/"
-              className={`nav-link font-medium py-2 ${location.pathname === '/' ? 'text-brand-400' : ''}`}
+              className={`block text-sm font-medium ${
+                isActive("/") ? "text-brand-400" : "text-gray-600"
+              }`}
               onClick={closeMenu}
             >
-              Home
+              Início
+            </Link>
+            <Link
+              to="/modelos"
+              className={`block text-sm font-medium ${
+                isActive("/modelos") ? "text-brand-400" : "text-gray-600"
+              }`}
+              onClick={closeMenu}
+            >
+              Modelos
             </Link>
             <Link
               to="/blog"
-              className={`nav-link font-medium py-2 ${location.pathname === '/blog' ? 'text-brand-400' : ''}`}
+              className={`block text-sm font-medium ${
+                isActive("/blog") ? "text-brand-400" : "text-gray-600"
+              }`}
               onClick={closeMenu}
             >
               Blog
             </Link>
-            <Link
-              to="/precos"
-              className={`nav-link font-medium py-2 ${location.pathname.includes('/precos') ? 'text-brand-400' : ''}`}
-              onClick={closeMenu}
-            >
-              Preços
-            </Link>
-            
-            <div className="flex flex-col space-y-3 pt-3 border-t border-gray-100">
+
+            <div className="pt-4 border-t border-gray-100">
               {user ? (
-                <>
+                <div className="flex flex-col space-y-2">
                   <Link to="/dashboard" onClick={closeMenu}>
-                    <Button className="w-full font-medium bg-brand-400 hover:bg-brand-500">
+                    <Button variant="outline" className="w-full">
                       Dashboard
                     </Button>
                   </Link>
-                  <Link to="/dashboard/criar-contrato" onClick={closeMenu}>
-                    <Button variant="outline" className="w-full font-medium">
-                      Criar Contrato
-                    </Button>
-                  </Link>
-                  <Button 
-                    variant="ghost" 
-                    className="w-full font-medium text-red-500 justify-start"
+                  <Button
+                    className="bg-brand-400 hover:bg-brand-500 w-full"
                     onClick={() => {
-                      handleLogout();
+                      signOut();
                       closeMenu();
                     }}
                   >
                     Sair
                   </Button>
-                </>
+                </div>
               ) : (
-                <>
+                <div className="flex flex-col space-y-2">
                   <Link to="/login" onClick={closeMenu}>
-                    <Button variant="outline" className="w-full font-medium">
+                    <Button variant="outline" className="w-full">
                       Entrar
                     </Button>
                   </Link>
                   <Link to="/registro" onClick={closeMenu}>
-                    <Button className="w-full bg-brand-400 hover:bg-brand-500 text-white font-medium">
-                      Criar Conta
+                    <Button
+                      className="bg-brand-400 hover:bg-brand-500 w-full"
+                      onClick={closeMenu}
+                    >
+                      Criar conta
                     </Button>
                   </Link>
-                </>
+                </div>
               )}
             </div>
           </div>
         </div>
       )}
-    </nav>
+    </header>
   );
 };
 

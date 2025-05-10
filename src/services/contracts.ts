@@ -111,11 +111,6 @@ export async function fetchContractById(contractId: string) {
       return null;
     }
 
-    // Garantir que o conteúdo do contrato tenha quebras de linha corretas
-    if (data && data.content) {
-      data.content = data.content.replace(/\\n/g, '\n');
-    }
-
     return data;
   } catch (error) {
     console.error("Erro inesperado ao buscar contrato:", error);
@@ -184,5 +179,52 @@ export async function checkUserSubscription() {
   } catch (error) {
     console.error("Erro ao verificar assinatura:", error);
     return false;
+  }
+}
+
+// Function to check if the free plan user has reached the contract limit
+export async function checkContractLimit(): Promise<{canCreate: boolean, message?: string}> {
+  try {
+    const isSubscribed = await checkUserSubscription();
+    
+    // Premium users have unlimited contracts
+    if (isSubscribed) {
+      return { canCreate: true };
+    }
+    
+    // For free users, check the contract count for the current month
+    const { data: userData } = await supabase.auth.getUser();
+    if (!userData?.user) {
+      return { canCreate: false, message: "Usuário não autenticado" };
+    }
+    
+    const firstDayOfMonth = new Date();
+    firstDayOfMonth.setDate(1);
+    firstDayOfMonth.setHours(0, 0, 0, 0);
+    
+    const { data, error, count } = await supabase
+      .from('contracts')
+      .select('id', { count: 'exact' })
+      .eq('user_id', userData.user.id)
+      .gte('created_at', firstDayOfMonth.toISOString());
+    
+    if (error) {
+      console.error("Erro ao verificar limite de contratos:", error);
+      return { canCreate: true }; // Allow creation on error, better user experience
+    }
+    
+    const contractCount = count || 0;
+    
+    if (contractCount >= 3) {
+      return { 
+        canCreate: false, 
+        message: "Você atingiu o limite de 3 contratos por mês no plano gratuito. Assine o plano Premium para criar contratos ilimitados."
+      };
+    }
+    
+    return { canCreate: true };
+  } catch (error) {
+    console.error("Erro ao verificar limite de contratos:", error);
+    return { canCreate: true }; // Allow creation on error, better user experience
   }
 }

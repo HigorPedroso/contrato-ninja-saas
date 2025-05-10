@@ -17,6 +17,8 @@ serve(async (req) => {
   }
 
   try {
+    console.log("Iniciando processo de checkout");
+    
     // Configurar Supabase client para autenticação do usuário
     const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY") || "";
@@ -49,6 +51,7 @@ serve(async (req) => {
     });
 
     // Verificar se o cliente já existe no Stripe
+    console.log("Verificando se o cliente já existe no Stripe");
     const customers = await stripe.customers.list({
       email: user.email,
       limit: 1,
@@ -78,6 +81,7 @@ serve(async (req) => {
     if (priceId === "price_free") {
       // Para o plano gratuito, não precisamos criar uma sessão do Stripe
       // Atualizamos diretamente o perfil do usuário
+      console.log("Processando plano gratuito");
       const supabaseAdmin = createClient(
         supabaseUrl, 
         Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "",
@@ -114,6 +118,8 @@ serve(async (req) => {
 
     // Criar uma sessão de checkout do Stripe
     const origin = req.headers.get("origin") || "";
+    console.log("Origin para redirecionamento:", origin);
+    
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       payment_method_types: ["card"],

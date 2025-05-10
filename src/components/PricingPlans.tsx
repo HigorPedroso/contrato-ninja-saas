@@ -2,60 +2,64 @@
 import { Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-
-const plans = [
-  {
-    name: "Gratuito",
-    price: "R$ 0",
-    period: "para sempre",
-    description: "Ideal para testar a plataforma",
-    features: [
-      "3 contratos por mês",
-      "Modelos básicos",
-      "Download em PDF",
-      "Suporte por email",
-    ],
-    featured: false,
-    cta: "Começar grátis",
-    ctaLink: "/registro",
-  },
-  {
-    name: "Profissional",
-    price: "R$ 39,90",
-    period: "por mês",
-    description: "Perfeito para freelancers ativos",
-    features: [
-      "Contratos ilimitados",
-      "Todos os modelos",
-      "Personalização avançada",
-      "Armazenamento na nuvem",
-      "Suporte prioritário",
-      "Modelos exclusivos",
-    ],
-    featured: true,
-    cta: "Assinar agora",
-    ctaLink: "/registro",
-  },
-  {
-    name: "Empresarial",
-    price: "R$ 89,90",
-    period: "por mês",
-    description: "Para pequenas empresas",
-    features: [
-      "Tudo do plano Profissional",
-      "Múltiplos usuários (até 5)",
-      "Dashboard de gestão",
-      "Suporte telefônico",
-      "Contratos personalizados",
-      "API para integração",
-    ],
-    featured: false,
-    cta: "Falar com consultor",
-    ctaLink: "/contato",
-  },
-];
+import { useAuth } from "@/contexts/AuthContext";
 
 const PricingPlans = () => {
+  const { user } = useAuth();
+  
+  const plans = [
+    {
+      name: "Gratuito",
+      price: "R$ 0",
+      period: "para sempre",
+      description: "Ideal para testar a plataforma",
+      features: [
+        "3 contratos por mês",
+        "Modelos básicos",
+        "Download em PDF",
+        "Suporte por email"
+      ],
+      featured: false,
+      cta: "Começar grátis",
+      ctaLink: user ? "/dashboard" : "/registro",
+    },
+    {
+      name: "Premium",
+      price: "R$ 19,90",
+      period: "por mês",
+      description: "Perfeito para freelancers e pequenas empresas",
+      features: [
+        "Contratos ilimitados",
+        "Todos os modelos premium",
+        "Personalização avançada",
+        "Formatação com HTML",
+        "Criação de posts no blog",
+        "Suporte prioritário",
+        "Sem marca d'água nos PDFs"
+      ],
+      featured: true,
+      cta: "Assinar agora",
+      ctaLink: user ? "/dashboard/assinatura" : "/registro",
+    },
+    {
+      name: "Empresarial",
+      price: "R$ 89,90",
+      period: "por mês",
+      description: "Para pequenas empresas",
+      features: [
+        "Tudo do plano Premium",
+        "Múltiplos usuários (até 5)",
+        "Dashboard de gestão",
+        "Suporte telefônico",
+        "Contratos personalizados",
+        "API para integração"
+      ],
+      featured: false,
+      cta: "Falar com consultor",
+      ctaLink: "/contato",
+    },
+  ];
+
   return (
     <section className="section bg-gray-50">
       <div className="container-tight">
