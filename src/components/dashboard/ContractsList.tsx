@@ -11,14 +11,19 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { fetchUserContracts, Contract } from "@/services/contracts";
+import { fetchUserContracts, fetchContractById, Contract } from "@/services/contracts";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { toast } from "@/hooks/use-toast";
+import { jsPDF } from "jspdf";
 
 const ContractsList = () => {
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedContract, setSelectedContract] = useState<any>(null);
+  const [openDialog, setOpenDialog] = useState(false);
 
   useEffect(() => {
     const loadContracts = async () => {
@@ -36,6 +41,84 @@ const ContractsList = () => {
       return format(new Date(dateString), "dd/MM/yyyy", { locale: ptBR });
     } catch (e) {
       return dateString;
+    }
+  };
+
+  const viewContract = async (contractId: string) => {
+    try {
+      const contractData = await fetchContractById(contractId);
+      if (contractData) {
+        // Substituir os \n por quebras de linha reais para exibição
+        if (contractData.content) {
+          contractData.content = contractData.content.replace(/\\n/g, '\n');
+        }
+        setSelectedContract(contractData);
+        setOpenDialog(true);
+      }
+    } catch (error) {
+      toast({
+        title: "Erro ao carregar contrato",
+        description: "Não foi possível carregar os detalhes do contrato.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const downloadContract = async (contractId: string) => {
+    try {
+      const contractData = await fetchContractById(contractId);
+      if (contractData) {
+        const doc = new jsPDF();
+        
+        // Configurar o PDF
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const margin = 20;
+        
+        // Adicionar título do contrato
+        doc.setFontSize(18);
+        doc.text(contractData.title, pageWidth / 2, 20, { align: "center" });
+        
+        // Adicionar informações do cliente
+        doc.setFontSize(12);
+        let yPosition = 40;
+        
+        if (contractData.client_name) {
+          doc.text(`Cliente: ${contractData.client_name}`, margin, yPosition);
+          yPosition += 10;
+        }
+        
+        if (contractData.client_email) {
+          doc.text(`Email: ${contractData.client_email}`, margin, yPosition);
+          yPosition += 10;
+        }
+        
+        doc.text(`Data: ${formatDate(contractData.created_at)}`, margin, yPosition);
+        yPosition += 20;
+        
+        // Adicionar conteúdo do contrato com quebras de linha
+        doc.setFontSize(11);
+        
+        // Substituir os \n por quebras de linha reais para o PDF
+        const formattedContent = contractData.content.replace(/\\n/g, '\n');
+        
+        const splitText = doc.splitTextToSize(formattedContent, pageWidth - (2 * margin));
+        doc.text(splitText, margin, yPosition);
+        
+        // Salvar o PDF
+        doc.save(`contrato-${contractData.id}.pdf`);
+        
+        toast({
+          title: "Download concluído",
+          description: "O contrato foi baixado com sucesso.",
+        });
+      }
+    } catch (error) {
+      console.error("Erro ao gerar PDF:", error);
+      toast({
+        title: "Erro ao baixar contrato",
+        description: "Não foi possível gerar o PDF do contrato.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -131,10 +214,20 @@ const ContractsList = () => {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end space-x-2">
-                        <Button variant="ghost" size="icon">
+                        <Button 
+                          variant="ghost" 
+                          size="icon"
+                          onClick={() => viewContract(contract.id)}
+                          title="Visualizar contrato"
+                        >
                           <Eye className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="icon">
+                        <Button 
+                          variant="ghost" 
+                          size="icon"
+                          onClick={() => downloadContract(contract.id)}
+                          title="Baixar contrato"
+                        >
                           <Download className="h-4 w-4" />
                         </Button>
                       </div>
@@ -161,6 +254,40 @@ const ContractsList = () => {
           )}
         </div>
       </div>
+
+      {/* Dialog para visualizar o contrato */}
+      <Dialog open={openDialog} onOpenChange={setOpenDialog}>
+        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{selectedContract?.title}</DialogTitle>
+          </DialogHeader>
+          
+          {selectedContract && (
+            <div className="mt-4">
+              {selectedContract.client_name && (
+                <p className="mb-2"><strong>Cliente:</strong> {selectedContract.client_name}</p>
+              )}
+              {selectedContract.client_email && (
+                <p className="mb-2"><strong>Email:</strong> {selectedContract.client_email}</p>
+              )}
+              <p className="mb-4"><strong>Data:</strong> {formatDate(selectedContract.created_at)}</p>
+              
+              <div className="mt-6 p-4 bg-gray-50 rounded-lg whitespace-pre-line border border-gray-200">
+                {selectedContract.content}
+              </div>
+              
+              <div className="flex justify-end mt-6">
+                <Button 
+                  onClick={() => downloadContract(selectedContract.id)}
+                  className="bg-brand-400 hover:bg-brand-500"
+                >
+                  <Download className="h-4 w-4 mr-2" /> Baixar PDF
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

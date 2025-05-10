@@ -35,6 +35,12 @@ const SubscriptionPage = () => {
       
       if (error) throw error;
       
+      // Se for o plano gratuito, redireciona para a página de contratos
+      if (planId === "price_free" && data.url === "/dashboard/contratos") {
+        window.location.href = data.url;
+        return;
+      }
+      
       // Redireciona para o checkout do Stripe
       window.location.href = data.url;
     } catch (error: any) {

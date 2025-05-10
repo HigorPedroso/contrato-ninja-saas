@@ -95,7 +95,7 @@ serve(async (req) => {
         JSON.stringify({ 
           success: true, 
           message: "Plano gratuito ativado com sucesso",
-          url: "/dashboard" 
+          url: "/dashboard/contratos" 
         }),
         {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -124,7 +124,7 @@ serve(async (req) => {
         },
       ],
       mode: "subscription",
-      success_url: `${origin}/dashboard/assinatura?success=true`,
+      success_url: `${origin}/dashboard/contratos?success=true`,
       cancel_url: `${origin}/dashboard/assinatura?canceled=true`,
     });
 

@@ -111,6 +111,11 @@ export async function fetchContractById(contractId: string) {
       return null;
     }
 
+    // Garantir que o conteúdo do contrato tenha quebras de linha corretas
+    if (data && data.content) {
+      data.content = data.content.replace(/\\n/g, '\n');
+    }
+
     return data;
   } catch (error) {
     console.error("Erro inesperado ao buscar contrato:", error);
