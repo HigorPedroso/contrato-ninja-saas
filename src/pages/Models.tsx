@@ -36,14 +36,25 @@ const Models = () => {
 
   const fetchModels = async () => {
     try {
+      console.log("Fetching models...");
       const { data, error } = await supabase
         .from("contract_templates")
-        .select("*");
+        .select("*")
+        .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Supabase error:", error);
+        throw error;
+      }
+
+      if (!data) {
+        console.warn("No data received from Supabase");
+        return;
+      }
+
+      console.log("Received models:", data.length);
       
-      // Transform the data to include slugs
-      const modelsWithSlugs = (data || []).map(model => ({
+      const modelsWithSlugs = data.map(model => ({
         ...model,
         slug: model.title.toLowerCase()
           .replace(/[^\w\s-]/g, '')
@@ -53,6 +64,7 @@ const Models = () => {
       setModels(modelsWithSlugs);
     } catch (error) {
       console.error("Error fetching models:", error);
+      // You might want to show an error message to the user here
     } finally {
       setLoading(false);
     }
