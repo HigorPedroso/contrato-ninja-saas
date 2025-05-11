@@ -185,6 +185,36 @@ export type Database = {
           },
         ]
       }
+      modelos_contrato: {
+        Row: {
+          categoria: string
+          conteudo_html: string
+          created_at: string
+          descricao: string
+          id: string
+          slug: string
+          titulo: string
+        }
+        Insert: {
+          categoria: string
+          conteudo_html: string
+          created_at?: string
+          descricao: string
+          id?: string
+          slug: string
+          titulo: string
+        }
+        Update: {
+          categoria?: string
+          conteudo_html?: string
+          created_at?: string
+          descricao?: string
+          id?: string
+          slug?: string
+          titulo?: string
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           created_at: string
