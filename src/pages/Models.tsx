@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Search, Filter, Eye, FileText, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -8,6 +9,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import { toast } from "@/hooks/use-toast";
 
 interface ContractModel {
   slug: any;
@@ -27,6 +29,7 @@ const Models = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [previewModel, setPreviewModel] = useState<ContractModel | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
   const { user } = useAuth();
 
@@ -37,6 +40,9 @@ const Models = () => {
   const fetchModels = async () => {
     try {
       console.log("Fetching models...");
+      setLoading(true);
+      setError(null);
+      
       const { data, error } = await supabase
         .from("contract_templates")
         .select("*")
@@ -44,11 +50,18 @@ const Models = () => {
 
       if (error) {
         console.error("Supabase error:", error);
-        throw error;
+        setError("Não foi possível carregar os modelos de contrato.");
+        toast({
+          title: "Erro ao carregar modelos",
+          description: "Houve um problema ao carregar os modelos. Por favor, tente novamente.",
+          variant: "destructive",
+        });
+        return;
       }
 
-      if (!data) {
-        console.warn("No data received from Supabase");
+      if (!data || data.length === 0) {
+        console.warn("No data received from Supabase or empty result");
+        setModels([]);
         return;
       }
 
@@ -64,7 +77,12 @@ const Models = () => {
       setModels(modelsWithSlugs);
     } catch (error) {
       console.error("Error fetching models:", error);
-      // You might want to show an error message to the user here
+      setError("Ocorreu um erro inesperado. Por favor, tente novamente.");
+      toast({
+        title: "Erro",
+        description: "Ocorreu um erro inesperado. Por favor, tente novamente mais tarde.",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
@@ -114,6 +132,20 @@ const Models = () => {
             </select>
           </div>
 
+          {/* Error state */}
+          {error && (
+            <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-lg mb-6">
+              <p className="font-medium">{error}</p>
+              <Button 
+                variant="outline" 
+                onClick={fetchModels}
+                className="mt-2"
+              >
+                Tentar novamente
+              </Button>
+            </div>
+          )}
+
           {/* Grid of Models */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {loading ? (
@@ -140,6 +172,13 @@ const Models = () => {
                 <p className="text-gray-600">
                   Tente ajustar seus filtros ou termos de busca
                 </p>
+                <Button 
+                  variant="outline"
+                  onClick={fetchModels}
+                  className="mt-4"
+                >
+                  Recarregar modelos
+                </Button>
               </div>
             ) : (
               filteredModels.map((model) => (
