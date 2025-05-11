@@ -57,13 +57,30 @@ export async function fetchUserContracts(): Promise<Contract[]> {
 
 export async function fetchContractTemplates() {
   try {
-    const { data, error } = await supabase
+    // First try to get templates from contract_templates table
+    const { data: templatesData, error: templatesError } = await supabase
       .from('contract_templates')
       .select('*')
       .order('title');
 
-    if (error) {
-      console.error("Erro ao carregar modelos de contrato:", error);
+    if (templatesError) {
+      console.error("Error fetching from contract_templates:", templatesError);
+      // Don't toast an error here, try the fallback first
+    }
+
+    // If we have templates data, return it
+    if (templatesData && templatesData.length > 0) {
+      return templatesData;
+    }
+
+    // If no templates found or error occurred, try the modelos_contrato table
+    const { data: modelosData, error: modelosError } = await supabase
+      .from('modelos_contrato')
+      .select('*')
+      .order('titulo');
+
+    if (modelosError) {
+      console.error("Error fetching from modelos_contrato:", modelosError);
       toast({
         title: "Erro ao carregar modelos",
         description: "Não foi possível carregar os modelos de contrato. Tente novamente.",
@@ -72,7 +89,21 @@ export async function fetchContractTemplates() {
       return [];
     }
 
-    return data || [];
+    // Transform the modelos_contrato data to match the contract_templates format
+    if (modelosData && modelosData.length > 0) {
+      return modelosData.map(modelo => ({
+        id: modelo.id,
+        title: modelo.titulo,
+        description: modelo.descricao,
+        content: modelo.conteudo_html,
+        template_type: modelo.categoria,
+        is_premium: false, // Default value
+        created_at: modelo.created_at,
+        updated_at: modelo.created_at
+      }));
+    }
+
+    return [];
   } catch (error) {
     console.error("Erro inesperado ao buscar modelos de contrato:", error);
     toast({

@@ -1,5 +1,6 @@
+
 import { useState, useEffect } from "react";
-import { Search, Filter, Eye, FileText, Copy } from "lucide-react";
+import { Search, Filter, Eye, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
@@ -8,6 +9,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import { toast } from "@/hooks/use-toast";
+import { fetchContractTemplates } from "@/services/contracts";
 
 interface ContractModel {
   slug: any;
@@ -36,23 +39,61 @@ const Models = () => {
 
   const fetchModels = async () => {
     try {
-      const { data, error } = await supabase
-        .from("contract_templates")
-        .select("*");
+      setLoading(true);
+      // First, try to use the service function that handles errors gracefully
+      const templatesData = await fetchContractTemplates();
 
-      if (error) throw error;
-      
-      // Transform the data to include slugs
-      const modelsWithSlugs = (data || []).map(model => ({
-        ...model,
-        slug: model.title.toLowerCase()
-          .replace(/[^\w\s-]/g, '')
-          .replace(/\s+/g, '-')
-      }));
+      if (templatesData && templatesData.length > 0) {
+        // Transform the data to include slugs
+        const modelsWithSlugs = templatesData.map(model => ({
+          ...model,
+          slug: model.title.toLowerCase()
+            .replace(/[^\w\s-]/g, '')
+            .replace(/\s+/g, '-')
+        }));
 
-      setModels(modelsWithSlugs);
+        setModels(modelsWithSlugs);
+      } else {
+        // Fallback to check for the modelos_contrato table if no templates were found
+        const { data, error } = await supabase
+          .from("modelos_contrato")
+          .select("*");
+
+        if (error) {
+          console.error("Error fetching models from modelos_contrato:", error);
+          toast({
+            title: "Erro ao carregar modelos",
+            description: "Não foi possível carregar os modelos de contrato.",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        if (data && data.length > 0) {
+          // Transform the data to match the ContractModel interface
+          const transformedData = data.map(item => ({
+            id: item.id,
+            title: item.titulo,
+            description: item.descricao,
+            content: item.conteudo_html,
+            template_type: item.categoria,
+            is_premium: false, // Default value
+            created_at: item.created_at,
+            updated_at: item.created_at,
+            slug: item.slug
+          }));
+          setModels(transformedData);
+        } else {
+          console.log("No models found in either table");
+        }
+      }
     } catch (error) {
       console.error("Error fetching models:", error);
+      toast({
+        title: "Erro ao carregar modelos",
+        description: "Ocorreu um erro ao carregar os modelos.",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }

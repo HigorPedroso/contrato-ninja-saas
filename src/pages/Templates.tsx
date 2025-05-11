@@ -22,9 +22,20 @@ const Templates = () => {
   useEffect(() => {
     const loadTemplates = async () => {
       setLoading(true);
-      const data = await fetchContractTemplates();
-      setTemplates(data);
-      setLoading(false);
+      try {
+        const data = await fetchContractTemplates();
+        console.log("Templates loaded:", data.length);
+        setTemplates(data);
+      } catch (error) {
+        console.error("Error loading templates:", error);
+        toast({
+          title: "Erro ao carregar modelos",
+          description: "Ocorreu um erro ao carregar os modelos de contrato.",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
+      }
     };
 
     loadTemplates();
