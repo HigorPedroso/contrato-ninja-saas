@@ -14,6 +14,7 @@ import {
 import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { useNavigate } from "react-router-dom";
 
 // Interface para posts
 interface Post {
@@ -56,6 +57,7 @@ const AdminDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const adminEmail = "higor533@gmail.com";
+  const navigate = useNavigate();
 
   // Verificar se o usuário atual é o administrador
   useEffect(() => {
@@ -370,6 +372,78 @@ const AdminDashboard = () => {
                       <tr>
                         <td colSpan={4} className="py-3 text-center text-gray-500">
                           Nenhum usuário premium encontrado
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </Card>
+          </div>
+          
+          {/* After the existing grid sections, add the new posts section */}
+          <div className="mt-8">
+            <Card className="p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-medium">Posts do Blog</h3>
+                <Button
+                  onClick={() => navigate('/admin/posts/new')}
+                  className="bg-brand-400 hover:bg-brand-500"
+                >
+                  <FileText className="h-4 w-4 mr-2" />
+                  Criar Nova Postagem
+                </Button>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="pb-2">Título</th>
+                      <th className="pb-2">Status</th>
+                      <th className="pb-2">Data de Criação</th>
+                      <th className="pb-2">Última Atualização</th>
+                      <th className="pb-2">Ações</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {posts.map((post) => (
+                      <tr key={post.id} className="border-b hover:bg-gray-50">
+                        <td className="py-3">{post.title}</td>
+                        <td className="py-3">
+                          <span className={`px-2 py-1 rounded-full text-xs ${
+                            post.published 
+                              ? 'bg-green-100 text-green-700' 
+                              : 'bg-yellow-100 text-yellow-700'
+                          }`}>
+                            {post.published ? 'Publicado' : 'Rascunho'}
+                          </span>
+                        </td>
+                        <td className="py-3">{formatDate(post.created_at)}</td>
+                        <td className="py-3">{formatDate(post.updated_at)}</td>
+                        <td className="py-3 space-x-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => window.open(`/blog/${post.title.toLowerCase()
+                              .replace(/[^\w\s-]/g, '')
+                              .replace(/\s+/g, '-')}`, '_blank')}
+                          >
+                            Visualizar
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => navigate(`/admin/posts/edit/${post.id}`)}
+                          >
+                            Editar
+                          </Button>
+                        </td>
+                      </tr>
+                    ))}
+                    {posts.length === 0 && (
+                      <tr>
+                        <td colSpan={5} className="py-3 text-center text-gray-500">
+                          Nenhum post encontrado
                         </td>
                       </tr>
                     )}

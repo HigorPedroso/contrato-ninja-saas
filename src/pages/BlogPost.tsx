@@ -9,10 +9,30 @@ import { ptBR } from "date-fns/locale";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
+interface BlogPost {
+  id: string;
+  title: string;
+  slug: string;
+  content: string;
+  excerpt: string | null;
+  featured_image: string | null;
+  author_slug: string;
+  published: boolean;
+  published_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+interface Author {
+  name: string;
+  slug: string;
+  image_url: string;
+}
+
 const BlogPost = () => {
   const { slug } = useParams<{ slug: string }>();
-  const [post, setPost] = useState<any>(null);
-  const [author, setAuthor] = useState<any>(null);
+  const [post, setPost] = useState<BlogPost | null>(null);
+  const [author, setAuthor] = useState<Author | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -24,7 +44,7 @@ const BlogPost = () => {
         // Fetch the post by slug
         const { data: postData, error: postError } = await supabase
           .from("blog_posts")
-          .select("*, author_id")
+          .select("*, author_slug")
           .eq("slug", slug)
           .eq("published", true)
           .single();
@@ -35,12 +55,12 @@ const BlogPost = () => {
 
         setPost(postData);
 
-        // Fetch the author details if available
-        if (postData.author_id) {
+        // Fetch the author details using author_slug
+        if (postData.author_slug) {
           const { data: authorData } = await supabase
-            .from("profiles")
-            .select("full_name, email")
-            .eq("id", postData.author_id)
+            .from("authors")
+            .select("name, image_url")
+            .eq("slug", postData.author_slug)
             .single();
 
           setAuthor(authorData);
@@ -65,6 +85,12 @@ const BlogPost = () => {
     } catch (e) {
       return dateString;
     }
+  };
+
+  // Add this function near the top of the component
+  const getImageUrl = (path: string | null) => {
+    if (!path) return null;
+    return `${supabase.storage.from('blog-images').getPublicUrl(path).data.publicUrl}`;
   };
 
   if (loading) {
@@ -113,7 +139,7 @@ const BlogPost = () => {
         {post.featured_image && (
           <div className="w-full h-[400px] bg-gray-100 relative">
             <img
-              src={post.featured_image}
+              src={getImageUrl(post.featured_image)}
               alt={post.title}
               className="w-full h-full object-cover"
             />
@@ -128,12 +154,13 @@ const BlogPost = () => {
             <div className="flex items-center mb-8">
               <div className="flex items-center">
                 <Avatar className="h-10 w-10 mr-4">
+                  <AvatarImage src={author?.image_url} alt={author?.name} />
                   <AvatarFallback>
-                    {author?.full_name ? author.full_name.charAt(0) : "U"}
+                    {author?.name ? author.name.charAt(0) : "A"}
                   </AvatarFallback>
                 </Avatar>
                 <div>
-                  <p className="font-medium">{author?.full_name || "Autor desconhecido"}</p>
+                  <p className="font-medium">{author?.name || "Autor desconhecido"}</p>
                   <p className="text-sm text-gray-500">
                     {formatDate(post.published_at || post.created_at)}
                   </p>

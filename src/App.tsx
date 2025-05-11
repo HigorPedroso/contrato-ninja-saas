@@ -21,6 +21,12 @@ import Blog from "@/pages/Blog";
 import "./App.css";
 import Models from "./pages/Models";
 import Contact from "./pages/Contact";
+import NewPost from "@/pages/admin/posts/New";
+import About from "./pages/About";
+import FAQ from "./pages/FAQ";
+import Terms from "@/pages/Terms";
+import Privacy from "./pages/Privacy";
+import LGPD from "./pages/LGPD";
 
 function App() {
   return (
@@ -46,10 +52,16 @@ function App() {
             <Route path="/admin" element={<ProtectedRoute adminOnly><AdminDashboard /></ProtectedRoute>} />
             {/* Move blog management to admin section */}
             <Route path="/admin/blog" element={<ProtectedRoute adminOnly><BlogPosts /></ProtectedRoute>} />
+            <Route path="/admin/posts/new" element={<ProtectedRoute><NewPost /></ProtectedRoute>} />
             
             {/* Catch All */}
             <Route path="*" element={<NotFound />} />
             <Route path="/contato" element={<Contact />}/>
+            <Route path="/sobre" element={<About />}/>
+            <Route path="/faq" element={<FAQ />} />
+            <Route path="/termos" element={<Terms />} />
+            <Route path="/privacidade" element={<Privacy />} />
+            <Route path="/lgpd" element={<LGPD />} />
           </Routes>
         </Router>
         <Toaster />

@@ -27,8 +27,10 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useActivity } from "@/hooks/useActivity";
 
 const ContractsList = () => {
+  const { trackActivity } = useActivity();
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedContract, setSelectedContract] = useState<any>(null);
@@ -70,6 +72,7 @@ const ContractsList = () => {
     try {
       const contractData = await fetchContractById(contractId);
       if (contractData) {
+        await trackActivity("view", contractId, contractData.title);
         setSelectedContract(contractData);
         setOpenDialog(true);
       }
@@ -153,6 +156,7 @@ const ContractsList = () => {
         
         // Save the PDF
         doc.save(`contrato-${contractData.id}.pdf`);
+        await trackActivity("download", contractId, contractData.title);
         
         toast({
           title: "Download concluído",
@@ -172,7 +176,10 @@ const ContractsList = () => {
   const handleStatusUpdate = async (contractId: string, newStatus: 'draft' | 'active' | 'expired' | 'canceled') => {
     const success = await updateContractStatus(contractId, newStatus);
     if (success) {
-      // Update the local state to reflect the change
+      const contract = contracts.find(c => c.id === contractId);
+      if (contract) {
+        await trackActivity("edit", contractId, contract.title);
+      }
       setContracts(contracts.map(contract => 
         contract.id === contractId ? {...contract, status: newStatus} : contract
       ));

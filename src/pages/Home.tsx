@@ -42,7 +42,7 @@ const Home = () => {
                 </Link>
               </div>
               <p className="text-gray-500 text-sm mt-4">
-                Mais de 10.000 contratos gerados por freelancers e empresas
+                Mais de 1.000 contratos gerados por freelancers e empresas
               </p>
             </div>
             <div className="relative hidden md:block">
@@ -72,11 +72,11 @@ const Home = () => {
             UTILIZADO POR EMPRESAS DE TODOS OS TAMANHOS
           </p>
           <div className="flex flex-wrap justify-center items-center gap-8 md:gap-16 opacity-70">
-            <div className="text-gray-400 font-semibold text-xl">empresa 1</div>
-            <div className="text-gray-400 font-semibold text-xl">empresa 2</div>
-            <div className="text-gray-400 font-semibold text-xl">empresa 3</div>
-            <div className="text-gray-400 font-semibold text-xl">empresa 4</div>
-            <div className="text-gray-400 font-semibold text-xl">empresa 5</div>
+            <div className="text-gray-400 font-semibold text-xl">TechSolutions</div>
+            <div className="text-gray-400 font-semibold text-xl">InovaBrasil</div>
+            <div className="text-gray-400 font-semibold text-xl">DigitalWave</div>
+            <div className="text-gray-400 font-semibold text-xl">CriativaTech</div>
+            <div className="text-gray-400 font-semibold text-xl">FuturoAgora</div>
           </div>
         </div>
       </section>

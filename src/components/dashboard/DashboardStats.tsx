@@ -31,11 +31,11 @@ const DashboardStats = () => {
           .not("client_email", "is", null);
 
         // Número estimado de downloads (baseado em visualizações de contrato com status concluído)
-        const { data: downloads, count: downloadsCount, error: downloadsError } = await supabase
-          .from("contracts")
+        const { count: downloadsCount, error: downloadsError } = await supabase
+          .from("activities")
           .select("*", { count: "exact" })
           .eq("user_id", user.id)
-          .eq("status", "active"); // Alterado de 'finalizado' para 'active' para corresponder ao enum contract_status
+          .eq("type", "download");
 
         // Calcular estatísticas
         const contratosTotal = contratosCount || 0;
@@ -48,26 +48,64 @@ const DashboardStats = () => {
         // Economia de tempo estimada (assumindo que cada contrato economiza 2 horas)
         const economiaHoras = contratosTotal * 2;
 
+        // Get last month's date range
+        const today = new Date();
+        const firstDayLastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+        const lastDayLastMonth = new Date(today.getFullYear(), today.getMonth(), 0);
+        
+        // Get last month's stats
+        const { count: lastMonthContratos } = await supabase
+          .from("contracts")
+          .select("*", { count: "exact" })
+          .eq("user_id", user.id)
+          .gte("created_at", firstDayLastMonth.toISOString())
+          .lte("created_at", lastDayLastMonth.toISOString());
+
+        const { count: lastMonthDownloads } = await supabase
+          .from("activities")
+          .select("*", { count: "exact" })
+          .eq("user_id", user.id)
+          .eq("type", "download")
+          .gte("created_at", firstDayLastMonth.toISOString())
+          .lte("created_at", lastDayLastMonth.toISOString());
+
+        const { data: lastMonthClientes } = await supabase
+          .from("contracts")
+          .select("client_email")
+          .eq("user_id", user.id)
+          .not("client_email", "is", null)
+          .gte("created_at", firstDayLastMonth.toISOString())
+          .lte("created_at", lastDayLastMonth.toISOString());
+
+        // Calculate percentage changes
+        const calcPercentChange = (current: number, previous: number) => {
+          if (previous === 0) return { mudanca: "+100%", direcao: "up" };
+          const change = ((current - previous) / previous) * 100;
+          return {
+            mudanca: `${change > 0 ? "+" : ""}${Math.round(change)}%`,
+            direcao: change > 0 ? "up" : change < 0 ? "down" : "none"
+          };
+        };
+
+        const lastMonthClientesUnicos = lastMonthClientes ? new Set(lastMonthClientes.map(c => c.client_email)).size : 0;
+
         setStats({
           contratos: { 
-            valor: contratosTotal.toString(), 
-            mudanca: "+20%", 
-            direcao: "up" 
+            valor: contratosTotal.toString(),
+            ...calcPercentChange(contratosTotal, lastMonthContratos || 0)
           },
           downloads: { 
-            valor: downloadsTotal.toString(), 
-            mudanca: "+35%", 
-            direcao: "up" 
+            valor: downloadsTotal.toString(),
+            ...calcPercentChange(downloadsTotal, lastMonthDownloads || 0)
           },
           clientes: { 
-            valor: clientesUnicos.toString(), 
-            mudanca: "+12%", 
-            direcao: "up" 
+            valor: clientesUnicos.toString(),
+            ...calcPercentChange(clientesUnicos, lastMonthClientesUnicos)
           },
           economia: { 
-            valor: `${economiaHoras}h`, 
-            mudanca: "", 
-            direcao: "none" 
+            valor: `${economiaHoras}h`,
+            mudanca: "",
+            direcao: "none"
           },
         });
       } catch (error) {

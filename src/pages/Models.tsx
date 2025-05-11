@@ -42,45 +42,32 @@ const Models = () => {
       console.log("Fetching models...");
       setLoading(true);
       setError(null);
-      
-      // Add timeout to handle potential blocking
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Request timeout')), 10000)
-      );
 
-      const fetchPromise = supabase
+      // Remove throwOnError and add explicit error handling
+      const { data, error } = await supabase
         .from("contract_templates")
-        .select("*")
+        .select("id, title, description, content, template_type, is_premium, created_at, updated_at")
         .order('created_at', { ascending: false });
 
-      const { data, error } = await Promise.race([fetchPromise, timeoutPromise])
-        .catch(error => {
-          if (error.message === 'Request timeout') {
-            throw new Error('Conexão bloqueada ou muito lenta. Verifique seu bloqueador de anúncios.');
-          }
-          throw error;
-        }) as any;
+      // Log the entire response for debugging
+      console.log("Full Supabase response:", JSON.stringify({ data, error }, null, 2));
 
       if (error) {
         console.error("Supabase error:", error);
-        setError("Não foi possível carregar os modelos de contrato. Verifique sua conexão e bloqueadores de conteúdo.");
+        setError("Não foi possível carregar os modelos de contrato.");
         toast({
           title: "Erro ao carregar modelos",
-          description: "Por favor, desative bloqueadores de conteúdo e tente novamente.",
+          description: "Houve um problema ao carregar os modelos. Por favor, tente novamente.",
           variant: "destructive",
         });
         return;
       }
 
-      if (!data || data.length === 0) {
-        console.warn("No data received from Supabase or empty result");
-        setModels([]);
-        return;
-      }
+      // Ensure data is an array
+      const modelsList = Array.isArray(data) ? data : [];
+      console.log("Models list:", modelsList.length, "items");
 
-      console.log("Received models:", data.length);
-      
-      const modelsWithSlugs = data.map(model => ({
+      const modelsWithSlugs = modelsList.map(model => ({
         ...model,
         slug: model.title.toLowerCase()
           .replace(/[^\w\s-]/g, '')
@@ -88,12 +75,12 @@ const Models = () => {
       }));
 
       setModels(modelsWithSlugs);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error fetching models:", error);
-      setError("Ocorreu um erro inesperado. Por favor, tente novamente.");
+      setError(error?.message || "Ocorreu um erro inesperado ao carregar os modelos.");
       toast({
         title: "Erro",
-        description: "Ocorreu um erro inesperado. Por favor, tente novamente mais tarde.",
+        description: error?.message || "Ocorreu um erro inesperado. Por favor, tente novamente mais tarde.",
         variant: "destructive",
       });
     } finally {

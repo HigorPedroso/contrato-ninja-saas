@@ -62,31 +62,31 @@ Têm entre si justo e contratado o seguinte:
 O presente contrato tem como objeto a prestação de serviços de natureza freelancer, especificamente: ${
       values.serviceDescription
     }, conforme as necessidades e diretrizes definidas pela CONTRATANTE.
-
+<br>
 <strong>CLÁUSULA 2ª – DAS OBRIGAÇÕES DO CONTRATADO</strong>
 O CONTRATADO se obriga a prestar os serviços com zelo, diligência, pontualidade e qualidade técnica, atendendo aos prazos estabelecidos e às orientações fornecidas pela CONTRATANTE.
-
+<br>
 <strong>CLÁUSULA 3ª – DAS OBRIGAÇÕES DO CONTRATANTE</strong>
 A CONTRATANTE se compromete a fornecer as informações, materiais e recursos necessários para a execução dos serviços, bem como realizar o pagamento nos prazos acordados.
-
+<br>
 <strong>CLÁUSULA 4ª – DO PRAZO</strong>
 Este contrato entra em vigor na data de sua assinatura e terá validade de ${
       values.startDate
     } até ${
       values.deliveryDate
     }, podendo ser prorrogado por mútuo acordo entre as partes.
-
+<br>
 <strong>CLÁUSULA 5ª – DO PAGAMENTO</strong>
 A CONTRATANTE pagará ao CONTRATADO o valor de R$ ${values.amount}, em ${
       values.paymentMethod
     }. Eventuais despesas extras devem ser previamente autorizadas pela CONTRATANTE.
-
+<br>
 <strong>CLÁUSULA 6ª – DA CONFIDENCIALIDADE</strong>
 Ambas as partes se comprometem a manter sigilo sobre todas as informações trocadas em razão deste contrato, não podendo divulgá-las a terceiros sem autorização expressa.
-
+<br>
 <strong>CLÁUSULA 7ª – DA RESCISÃO</strong>
 O presente contrato poderá ser rescindido por qualquer das partes mediante aviso prévio de 30 dias, ou de forma imediata em caso de descumprimento de cláusulas contratuais.
-
+<br>
 <strong>CLÁUSULA 8ª – DO FORO</strong>
 Para dirimir quaisquer controvérsias oriundas deste contrato, as partes elegem o foro da comarca de São Paulo/SP, renunciando a qualquer outro, por mais privilegiado que seja.
 
@@ -98,7 +98,7 @@ ${
 E, por estarem assim justos e contratados, firmam o presente instrumento digitalmente.
 
 ${today}
-
+<br>
 <strong>CONTRATANTE:</strong> ___________________________
 <strong>CONTRATADO:</strong> ___________________________`;
   };
@@ -235,43 +235,43 @@ export const generateConsultingContract = (values) => {
     }, com endereço em ${values.consultantAddress};
   
   Têm entre si justo e contratado o que segue:
-  
+  <br>
   <strong>CLÁUSULA 1ª – DO OBJETO</strong>
   O presente contrato tem como objeto a prestação de serviços de consultoria empresarial na área de ${
     values.consultingArea
   }, com o seguinte objetivo: ${values.consultingObjective}.
-  
+  <br>
   <strong>CLÁUSULA 2ª – DO PRAZO</strong>
   O presente contrato terá duração de ${
     values.contractDuration
   } meses, iniciando-se em ${
       values.startDate
     }, podendo ser prorrogado mediante acordo entre as partes.
-  
+  <br>
   <strong>CLÁUSULA 3ª – DAS OBRIGAÇÕES DO CONTRATADO</strong>
   O CONTRATADO se compromete a:
   - Prestar os serviços de consultoria com zelo e dedicação;
   - Realizar reuniões ${values.meetingFrequency} com a CONTRATANTE;
   - Entregar relatórios na forma de ${values.reportDeliveryMethod};
   - Manter sigilo sobre todas as informações obtidas durante a prestação dos serviços.
-  
+  <br>
   <strong>CLÁUSULA 4ª – DAS OBRIGAÇÕES DA CONTRATANTE</strong>
   A CONTRATANTE se compromete a:
   - Fornecer todas as informações necessárias para a execução dos serviços;
   - Realizar os pagamentos conforme acordado;
   - Disponibilizar acesso às instalações e documentos necessários.
-  
+  <br>
   <strong>CLÁUSULA 5ª – DO VALOR E FORMA DE PAGAMENTO</strong>
   Pelos serviços prestados, a CONTRATANTE pagará ao CONTRATADO o valor total de R$ ${
     values.amount
   }, a ser pago da seguinte forma: ${values.paymentMethod}.
-  
+  <br>
   <strong>CLÁUSULA 6ª – DA CONFIDENCIALIDADE</strong>
   As partes se comprometem a manter absoluto sigilo sobre quaisquer dados, materiais, documentos, especificações técnicas e comerciais do qual venham a ter conhecimento em virtude deste contrato, não podendo, sob qualquer pretexto, divulgar, revelar, reproduzir ou utilizar em benefício próprio ou de terceiros, sob pena de responder por perdas e danos.
-  
+  <br>
   <strong>CLÁUSULA 7ª – DA RESCISÃO</strong>
   O presente contrato poderá ser rescindido por qualquer das partes mediante notificação prévia de 30 dias, ou imediatamente em caso de descumprimento de qualquer cláusula.
-  
+  <br>
   <strong>CLÁUSULA 8ª – DO FORO</strong>
   Fica eleito o foro da comarca de São Paulo/SP para dirimir quaisquer dúvidas oriundas deste contrato.
   

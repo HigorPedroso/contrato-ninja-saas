@@ -134,18 +134,14 @@ const ContractForm = () => {
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
       setIsSubmitting(true);
-      const {
-        data: { user },
-        error: userError,
-      } = await supabase.auth.getUser();
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
       if (userError) throw userError;
 
       const { canCreate, message } = await checkContractLimit();
       if (!canCreate && !isSubscribed) {
         toast({
           title: "Limite atingido",
-          description:
-            message || "Você atingiu o limite de contratos do plano gratuito.",
+          description: message || "Você atingiu o limite de contratos do plano gratuito.",
           variant: "destructive",
         });
         setLimitReached(true);
@@ -160,6 +156,13 @@ const ContractForm = () => {
         content = generateDesignContract(values);
       } else if (isConsultingContract) {
         content = generateConsultingContract(values);
+      }
+
+      // Add watermark for free tier users
+      if (!isSubscribed) {
+        content = `${content}\n\n<div style="text-align: center; margin-top: 20px; color: #666; font-size: 12px;">
+          Gerado gratuitamente por ContratoFlash - contratoflash.com.br
+        </div>`;
       }
 
       const contractData = {

@@ -115,11 +115,11 @@ const Sidebar = () => {
             <AvatarImage src={user?.user_metadata?.avatar_url} alt={profile?.full_name || user?.email || ""} />
             <AvatarFallback>{getInitials()}</AvatarFallback>
           </Avatar>
-          <div className="flex flex-col">
-            <span className="font-medium text-gray-900">
+          <div className="flex flex-col min-w-0"> {/* Added min-w-0 to enable truncation */}
+            <span className="font-medium text-gray-900 truncate">
               {profile?.full_name || user?.email}
             </span>
-            <span className="text-sm text-gray-500">
+            <span className="text-sm text-gray-500 truncate">
               {profile?.full_name ? user?.email : ''}
             </span>
             <span className="text-xs font-medium">
