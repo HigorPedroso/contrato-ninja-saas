@@ -43,17 +43,30 @@ const Models = () => {
       setLoading(true);
       setError(null);
       
-      const { data, error } = await supabase
+      // Add timeout to handle potential blocking
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Request timeout')), 10000)
+      );
+
+      const fetchPromise = supabase
         .from("contract_templates")
         .select("*")
         .order('created_at', { ascending: false });
 
+      const { data, error } = await Promise.race([fetchPromise, timeoutPromise])
+        .catch(error => {
+          if (error.message === 'Request timeout') {
+            throw new Error('Conexão bloqueada ou muito lenta. Verifique seu bloqueador de anúncios.');
+          }
+          throw error;
+        }) as any;
+
       if (error) {
         console.error("Supabase error:", error);
-        setError("Não foi possível carregar os modelos de contrato.");
+        setError("Não foi possível carregar os modelos de contrato. Verifique sua conexão e bloqueadores de conteúdo.");
         toast({
           title: "Erro ao carregar modelos",
-          description: "Houve um problema ao carregar os modelos. Por favor, tente novamente.",
+          description: "Por favor, desative bloqueadores de conteúdo e tente novamente.",
           variant: "destructive",
         });
         return;
