@@ -19,6 +19,8 @@ import Templates from "@/pages/Templates";
 import BlogPost from "@/pages/BlogPost";
 import Blog from "@/pages/Blog";
 import "./App.css";
+import Models from "./pages/Models";
+import Contact from "./pages/Contact";
 
 function App() {
   return (
@@ -31,7 +33,7 @@ function App() {
             <Route path="/registro" element={<Register />} />
             <Route path="/blog" element={<Blog />} />
             <Route path="/blog/:slug" element={<BlogPost />} />
-            <Route path="/modelos" element={<Templates />} />
+            <Route path="/modelos" element={<Models />} />
             
             {/* Protected Routes */}
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
@@ -47,6 +49,7 @@ function App() {
             
             {/* Catch All */}
             <Route path="*" element={<NotFound />} />
+            <Route path="/contato" element={<Contact />}/>
           </Routes>
         </Router>
         <Toaster />

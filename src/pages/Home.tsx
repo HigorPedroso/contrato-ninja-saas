@@ -18,15 +18,15 @@ const Home = () => {
       <Navbar />
       
       {/* Hero Section */}
-      <section className="pt-20 pb-16 md:pt-28 md:pb-24 border-b border-gray-100">
-        <div className="container-tight">
+      <section className="flex-1 flex items-center border-b border-gray-100 mt-5">
+        <div className="container-tight w-full">
           <div className="grid md:grid-cols-2 gap-12 items-center">
             <div className="text-center md:text-left">
               <h1 className="font-bold mb-6 leading-tight">
                 Gere <span className="gradient-text">Contratos Jurídicos</span> em Minutos
               </h1>
               <p className="text-lg md:text-xl text-gray-600 mb-8 max-w-lg mx-auto md:mx-0">
-                Crie contratos personalizados sem precisar contratar advogados caros. Simples, rápido e seguro para freelancers e pequenas empresas.
+                Crie contratos personalizados sem precisar contratar advogados caros. Simples, rápido e seguro para freelancers, designers e pequenas empresas.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
                 <Link to={user ? "/dashboard" : "/login"}>

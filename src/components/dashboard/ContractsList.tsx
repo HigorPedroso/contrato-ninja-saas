@@ -88,40 +88,68 @@ const ContractsList = () => {
       if (contractData) {
         const doc = new jsPDF();
         
-        // Configurar o PDF
+        // Configure PDF settings
+        doc.setFont("helvetica");
         const pageWidth = doc.internal.pageSize.getWidth();
         const margin = 20;
+        const lineHeight = 7;
+        let yPosition = 20;
         
-        // Adicionar título do contrato
-        doc.setFontSize(18);
-        doc.text(contractData.title, pageWidth / 2, 20, { align: "center" });
+        // Add contract title
+        doc.setFontSize(16);
+        doc.text(contractData.title, pageWidth / 2, yPosition, { align: "center" });
+        yPosition += lineHeight * 2;
         
-        // Adicionar informações do cliente
+        // Add client information if available
         doc.setFontSize(12);
-        let yPosition = 40;
-        
         if (contractData.client_name) {
           doc.text(`Cliente: ${contractData.client_name}`, margin, yPosition);
-          yPosition += 10;
+          yPosition += lineHeight;
         }
-        
         if (contractData.client_email) {
           doc.text(`Email: ${contractData.client_email}`, margin, yPosition);
-          yPosition += 10;
+          yPosition += lineHeight;
         }
-        
         doc.text(`Data: ${formatDate(contractData.created_at)}`, margin, yPosition);
-        yPosition += 20;
-        
-        // Create a temporary div element to parse HTML content
+        yPosition += lineHeight * 2;
+
+        // Process HTML content
         const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = formatContent(contractData.content);
-        const plainText = tempDiv.textContent || '';
+        tempDiv.innerHTML = contractData.content;
         
-        // Add the plain text content to the PDF with line breaks
+        // Convert HTML to formatted text
         doc.setFontSize(11);
-        const splitText = doc.splitTextToSize(plainText, pageWidth - (2 * margin));
-        doc.text(splitText, margin, yPosition);
+        const processNode = (node: Node, indent = 0) => {
+          Array.from(node.childNodes).forEach(child => {
+            if (child.nodeType === Node.TEXT_NODE) {
+              const text = child.textContent?.trim();
+              if (text) {
+                const lines = doc.splitTextToSize(text, pageWidth - (2 * margin));
+                lines.forEach(line => {
+                  if (yPosition > doc.internal.pageSize.getHeight() - margin) {
+                    doc.addPage();
+                    yPosition = margin;
+                  }
+                  doc.text(line, margin + indent, yPosition);
+                  yPosition += lineHeight;
+                });
+              }
+            } else if (child.nodeType === Node.ELEMENT_NODE) {
+              const element = child as HTMLElement;
+              if (element.tagName === 'STRONG' || element.tagName === 'B') {
+                doc.setFont("helvetica", "bold");
+                processNode(child, indent);
+                doc.setFont("helvetica", "normal");
+              } else if (element.tagName === 'BR' || element.tagName === 'P') {
+                yPosition += lineHeight;
+              } else {
+                processNode(child, indent);
+              }
+            }
+          });
+        };
+
+        processNode(tempDiv);
         
         // Save the PDF
         doc.save(`contrato-${contractData.id}.pdf`);
