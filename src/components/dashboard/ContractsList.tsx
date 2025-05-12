@@ -226,6 +226,7 @@ const ContractsList = () => {
               headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${session?.access_token}`,
+                'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
               },
               body: JSON.stringify({
                 to: clientEmail,
@@ -249,8 +250,12 @@ const ContractsList = () => {
             }
           );
       
-          if (!response.ok) throw new Error('Failed to send email');
-      
+          const data = await response.json();
+          
+          if (!response.ok) {
+            throw new Error(data.error || 'Failed to send email');
+          }
+
           toast({
             title: "Email enviado",
             description: "O cliente foi notificado sobre a assinatura pendente.",
