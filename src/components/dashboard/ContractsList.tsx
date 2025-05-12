@@ -12,7 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { fetchUserContracts, fetchContractById, updateContractStatus, Contract } from "@/services/contracts";
+import { fetchUserContracts, fetchContractById, updateContractStatus } from "@/services/contracts";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -28,6 +28,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useActivity } from "@/hooks/useActivity";
+import { PDFDocument } from 'pdf-lib';
 
 // Add this import at the top with other imports
 import { SHA256 } from "crypto-js";
@@ -36,6 +37,7 @@ import { SHA256 } from "crypto-js";
 import { PenLine, ExternalLink, Upload, AlertCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Resend } from 'resend';
+import { ContractStatus, Contract } from "@/types/contract";
 
 
 const ContractsList = () => {
@@ -97,81 +99,133 @@ const ContractsList = () => {
   const downloadContract = async (contractId: string) => {
     try {
       const contractData = await fetchContractById(contractId);
-      if (contractData) {
-        const doc = new jsPDF();
+      if (!contractData) return;
+  
+      // Get signed file if available
+      let fileToDownload: string | null = null;
+  
+      if (contractData.client_signed_file_path) {
+        // Both signatures available - download client signed version
+        const { data: clientSignedFile } = await supabase.storage
+          .from('signed-contracts')
+          .download(contractData.client_signed_file_path);
         
-        // Configure PDF settings
-        doc.setFont("helvetica");
-        const pageWidth = doc.internal.pageSize.getWidth();
-        const margin = 20;
-        const lineHeight = 7;
-        let yPosition = 20;
-        
-        // Add contract title
-        doc.setFontSize(16);
-        doc.text(contractData.title, pageWidth / 2, yPosition, { align: "center" });
-        yPosition += lineHeight * 2;
-        
-        // Add client information if available
-        doc.setFontSize(12);
-        if (contractData.client_name) {
-          doc.text(`Cliente: ${contractData.client_name}`, margin, yPosition);
-          yPosition += lineHeight;
+        if (clientSignedFile) {
+          const url = URL.createObjectURL(clientSignedFile);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `contrato-${contractData.id}-assinado.pdf`;
+          a.click();
+          URL.revokeObjectURL(url);
+          await trackActivity("download", contractId, contractData.title);
+          return;
         }
-        if (contractData.client_email) {
-          doc.text(`Email: ${contractData.client_email}`, margin, yPosition);
-          yPosition += lineHeight;
+      } else if (contractData.signed_file_path) {
+        // Only user signature available - download user signed version
+        const { data: userSignedFile } = await supabase.storage
+          .from('signed-contracts')
+          .download(contractData.signed_file_path);
+        
+        if (userSignedFile) {
+          const url = URL.createObjectURL(userSignedFile);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `contrato-${contractData.id}-assinado-usuario.pdf`;
+          a.click();
+          URL.revokeObjectURL(url);
+          await trackActivity("download", contractId, contractData.title);
+          return;
         }
-        doc.text(`Data: ${formatDate(contractData.created_at)}`, margin, yPosition);
-        yPosition += lineHeight * 2;
-
-        // Process HTML content
-        const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = contractData.content;
-        
-        // Convert HTML to formatted text
-        doc.setFontSize(11);
-        const processNode = (node: Node, indent = 0) => {
-          Array.from(node.childNodes).forEach(child => {
-            if (child.nodeType === Node.TEXT_NODE) {
-              const text = child.textContent?.trim();
-              if (text) {
-                const lines = doc.splitTextToSize(text, pageWidth - (2 * margin));
-                lines.forEach(line => {
-                  if (yPosition > doc.internal.pageSize.getHeight() - margin) {
-                    doc.addPage();
-                    yPosition = margin;
-                  }
-                  doc.text(line, margin + indent, yPosition);
-                  yPosition += lineHeight;
-                });
-              }
-            } else if (child.nodeType === Node.ELEMENT_NODE) {
-              const element = child as HTMLElement;
-              if (element.tagName === 'STRONG' || element.tagName === 'B') {
-                doc.setFont("helvetica", "bold");
-                processNode(child, indent);
-                doc.setFont("helvetica", "normal");
-              } else if (element.tagName === 'BR' || element.tagName === 'P') {
-                yPosition += lineHeight;
-              } else {
-                processNode(child, indent);
-              }
-            }
-          });
-        };
-
-        processNode(tempDiv);
-        
-        // Save the PDF
-        doc.save(`contrato-${contractData.id}.pdf`);
-        await trackActivity("download", contractId, contractData.title);
-        
-        toast({
-          title: "Download concluído",
-          description: "O contrato foi baixado com sucesso.",
-        });
       }
+  
+      // No signatures - generate unsigned PDF
+      const doc = new jsPDF();
+  
+      // Configure PDF settings
+      doc.setFont("helvetica");
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const margin = 20;
+      const lineHeight = 7;
+      let yPosition = 20;
+  
+      // Add contract title
+      doc.setFontSize(16);
+      doc.text(contractData.title, pageWidth / 2, yPosition, { align: "center" });
+      yPosition += lineHeight * 2;
+  
+      // Add client information if available
+      doc.setFontSize(12);
+      if (contractData.client_name) {
+        doc.text(`Cliente: ${contractData.client_name}`, margin, yPosition);
+        yPosition += lineHeight;
+      }
+      if (contractData.client_email) {
+        doc.text(`Email: ${contractData.client_email}`, margin, yPosition);
+        yPosition += lineHeight;
+      }
+      if (contractData.client_cpf) {
+        doc.text(`CPF: ${contractData.client_cpf}`, margin, yPosition);
+        yPosition += lineHeight;
+      }
+      if (contractData.client_address) {
+        doc.text(`Endereço: ${contractData.client_address}`, margin, yPosition);
+        yPosition += lineHeight;
+      }
+      doc.text(`Data: ${formatDate(contractData.created_at)}`, margin, yPosition);
+      yPosition += lineHeight * 2;
+  
+      // Process HTML content
+      const tempDiv = document.createElement('div');
+      // Replace undefined values with placeholders or empty strings
+      const processedContent = contractData.content
+        .replace('undefined, inscrito(a)', `${contractData.client_name || '[Nome do Designer]'}, inscrito(a)`)
+        .replace('nº undefined', `nº ${contractData.client_cpf || '[CPF]'}`)
+        .replace('em undefined', `em ${contractData.client_address || '[Endereço]'}`);
+  
+      tempDiv.innerHTML = processedContent;
+  
+      // Convert HTML to formatted text
+      doc.setFontSize(11);
+      const processNode = (node: Node, indent = 0) => {
+        Array.from(node.childNodes).forEach(child => {
+          if (child.nodeType === Node.TEXT_NODE) {
+            const text = child.textContent?.trim();
+            if (text) {
+              const lines = doc.splitTextToSize(text, pageWidth - (2 * margin));
+              lines.forEach(line => {
+                if (yPosition > doc.internal.pageSize.getHeight() - margin) {
+                  doc.addPage();
+                  yPosition = margin;
+                }
+                doc.text(line, margin + indent, yPosition);
+                yPosition += lineHeight;
+              });
+            }
+          } else if (child.nodeType === Node.ELEMENT_NODE) {
+            const element = child as HTMLElement;
+            if (element.tagName === 'STRONG' || element.tagName === 'B') {
+              doc.setFont("helvetica", "bold");
+              processNode(child, indent);
+              doc.setFont("helvetica", "normal");
+            } else if (element.tagName === 'BR' || element.tagName === 'P') {
+              yPosition += lineHeight;
+            } else {
+              processNode(child, indent);
+            }
+          };
+        })
+      }
+      
+      processNode(tempDiv);
+      
+      // Save the PDF
+      doc.save(`contrato-${contractData.id}.pdf`);
+      await trackActivity("download", contractId, contractData.title);
+      
+      toast({
+        title: "Download concluído",
+        description: "O contrato foi baixado com sucesso.",
+      });
     } catch (error) {
       console.error("Erro ao gerar PDF:", error);
       toast({
@@ -180,6 +234,17 @@ const ContractsList = () => {
         variant: "destructive",
       });
     }
+  };
+
+  const handleSignatureDialogChange = (open: boolean) => {
+    if (!open) {
+      setSignedFile(null);
+      setClientEmail("");
+      setIsValidEmail(false);
+      setHasValidSignature(false);
+      setUploadProgress(0);
+    }
+    setSignatureDialog(open);
   };
 
   const handleStatusUpdate = async (contractId: string, newStatus: 'draft' | 'active' | 'expired' | 'canceled') => {
@@ -214,6 +279,21 @@ const ContractsList = () => {
       const [signatureStatus, setSignatureStatus] = useState("");
       const [signerEmail, setSignerEmail] = useState("");
       const [clientEmail, setClientEmail] = useState("");
+      const [isValidEmail, setIsValidEmail] = useState(false);
+      const [hasValidSignature, setHasValidSignature] = useState(false);
+
+      const [signatureError, setSignatureError] = useState("");
+
+      const validateEmail = (email: string) => {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return emailRegex.test(email);
+      };
+
+      const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const email = e.target.value;
+        setClientEmail(email);
+        setIsValidEmail(validateEmail(email));
+      };
 
       const sendSignatureRequestEmail = async (contractId: string, signedFileUrl: string, clientEmail: string) => {
         try {
@@ -286,7 +366,7 @@ const ContractsList = () => {
           });
       
           // Update contract status
-          await handleStatusUpdate(contract.id, "pending_signature");
+          await handleStatusUpdate(contract.id, "active");
           
           toast({
             title: "Solicitação de assinatura enviada",
@@ -308,10 +388,52 @@ const ContractsList = () => {
       const [signedFile, setSignedFile] = useState<File | null>(null);
       const [uploadProgress, setUploadProgress] = useState(0);
       
-      // Add new function for handling file upload
+      const verifyPdfSignature = async (file: File): Promise<boolean> => {
+        try {
+          const formData = new FormData();
+          formData.append('file', file);
+      
+          const { data: { session } } = await supabase.auth.getSession();
+          
+          const response = await fetch(
+            'https://vqhmhsmufgcoiajgxzmm.supabase.co/functions/v1/verify-signature',
+            {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${session?.access_token}`,
+                'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+              },
+              body: formData
+            }
+          );
+      
+          const data = await response.json();
+          
+          console.log('Signature verification result:', data);
+          
+          return data.signed;
+        } catch (error) {
+          console.error('Error verifying PDF signature:', error);
+          return false;
+        }
+      };
+      
+      // Update the handleFileUpload function
       const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (file && file.type === "application/pdf") {
+          const hasSignature = await verifyPdfSignature(file);
+          setHasValidSignature(hasSignature); // Add this line to update the state
+          
+          if (!hasSignature) {
+            toast({
+              title: "PDF não assinado",
+              description: "O arquivo PDF não possui uma assinatura digital válida. Por favor, assine o documento usando o Gov.br primeiro.",
+              variant: "destructive",
+            });
+            setSignedFile(null);
+            return;
+          }
           setSignedFile(file);
         } else {
           toast({
@@ -319,6 +441,8 @@ const ContractsList = () => {
             description: "Por favor, selecione um arquivo PDF.",
             variant: "destructive",
           });
+          setSignedFile(null);
+          setHasValidSignature(false); // Reset signature validation when file is invalid
         }
       };
       
@@ -343,19 +467,22 @@ const ContractsList = () => {
       
           if (error) throw error;
       
-          // Get the public URL for the uploaded file
           const { data: { publicUrl } } = supabase.storage
             .from('signed-contracts')
             .getPublicUrl(data.path);
       
-          // Update contract status using an existing valid status
+          const signerIp = await fetch('https://api.ipify.org?format=json')
+            .then(res => res.json())
+            .then(data => data.ip);
+      
+          // Update contract with correct status enum value
           const { error: updateError } = await supabase
             .from('contracts')
             .update({
-              status: 'draft', // Changed from 'pending_signature' to 'draft'
-              signed_file_path: data?.path,
+              status: 'active', // Using existing valid status instead of pending_client_signature
+              signed_file_path: data.path,
               signed_at: new Date().toISOString(),
-              signer_ip: await fetch('https://api.ipify.org?format=json').then(res => res.json()).then(data => data.ip),
+              signer_ip: signerIp,
               client_email: clientEmail
             })
             .eq('id', selectedContract.id);
@@ -374,6 +501,10 @@ const ContractsList = () => {
           setSignedFile(null);
           setUploadProgress(0);
           setClientEmail("");
+          
+          // Refresh contracts list
+          const updatedContracts = await fetchUserContracts();
+          setContracts(updatedContracts);
         } catch (error) {
           console.error('Error uploading signed contract:', error);
           toast({
@@ -383,6 +514,21 @@ const ContractsList = () => {
           });
         }
       };
+
+      const getStatusDisplay = (status: ContractStatus) => {
+        const statusConfig = {
+          [ContractStatus.DRAFT]: { label: "Rascunho", classes: "bg-yellow-100 text-yellow-800" },
+          [ContractStatus.PENDING_USER_SIGNATURE]: { label: "Aguardando sua assinatura", classes: "bg-blue-100 text-blue-800" },
+          [ContractStatus.PENDING_CLIENT_SIGNATURE]: { label: "Aguardando assinatura do cliente", classes: "bg-purple-100 text-purple-800" },
+          [ContractStatus.SIGNED]: { label: "Assinado", classes: "bg-green-100 text-green-800" },
+          [ContractStatus.EXPIRED]: { label: "Expirado", classes: "bg-gray-100 text-gray-800" },
+          [ContractStatus.CANCELED]: { label: "Cancelado", classes: "bg-red-100 text-red-800" }
+        };
+      
+        return statusConfig[status] || statusConfig[ContractStatus.DRAFT];
+      };
+
+      
 
   return (
     <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
@@ -462,23 +608,10 @@ const ContractsList = () => {
                     <TableCell>{contract.client_name || "-"}</TableCell>
                     <TableCell>{formatDate(contract.created_at)}</TableCell>
                     <TableCell>
-                      <span
-                        className={`px-2 py-1 rounded-full text-xs ${
-                          contract.status === "active"
-                            ? "bg-green-100 text-green-800"
-                            : contract.status === "draft"
-                            ? "bg-yellow-100 text-yellow-800"
-                            : contract.status === "expired"
-                            ? "bg-gray-100 text-gray-800"
-                            : "bg-red-100 text-red-800"
-                        }`}
-                      >
-                        {contract.status === "active" ? "Ativo" :
-                         contract.status === "draft" ? "Rascunho" :
-                         contract.status === "expired" ? "Expirado" :
-                         "Cancelado"}
-                      </span>
-                    </TableCell>
+  <span className={`px-2 py-1 rounded-full text-xs ${getStatusDisplay(contract.status).classes}`}>
+    {getStatusDisplay(contract.status).label}
+  </span>
+</TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end space-x-2">
                       {canAddSignature(contract) && (              
@@ -547,8 +680,6 @@ const ContractsList = () => {
                           </DropdownMenuContent>
                         </DropdownMenu>
                         
-                        {/* Show signature option for freelancer and design contracts */}
-                        {canAddSignature(contract) && (
                           <Button 
                             variant="outline" 
                             size="sm"
@@ -557,7 +688,6 @@ const ContractsList = () => {
                           >
                             Assinar
                           </Button>
-                        )}
                       </div>
                     </TableCell>
                   </TableRow>
@@ -620,7 +750,7 @@ const ContractsList = () => {
         </DialogContent>
       </Dialog>
 
-    <Dialog open={signatureDialog} onOpenChange={setSignatureDialog}>
+      <Dialog open={signatureDialog} onOpenChange={handleSignatureDialogChange}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle>Assinatura via Gov.br</DialogTitle>
@@ -631,7 +761,7 @@ const ContractsList = () => {
             <div className="p-4 bg-amber-50 rounded border border-amber-200">
               <p className="text-amber-800 text-sm flex items-center gap-2">
                 <AlertCircle className="h-4 w-4" />
-                Sua conta Gov.br precisa estar no nível Prata ou Ouro para assinatura digital válida
+                Sua conta Gov.br precisa estar no nível Prata(Gratuito) ou Ouro(Gratuito) para assinatura digital válida
               </p>
             </div>
     
@@ -676,12 +806,12 @@ const ContractsList = () => {
     Email do Cliente
   </label>
   <Input
-    type="email"
-    value={clientEmail}
-    onChange={(e) => setClientEmail(e.target.value)}
-    placeholder="cliente@email.com"
-    className="mb-4"
-  />
+  type="email"
+  value={clientEmail}
+  onChange={handleEmailChange}
+  placeholder="cliente@email.com"
+  className="mb-4"
+/>
                 <label className="block text-sm font-medium mb-2">
                   Upload do Contrato Assinado
                 </label>
@@ -710,13 +840,13 @@ const ContractsList = () => {
                 Cancelar
               </Button>
               <Button
-                onClick={handleGovBrSignature}
-                disabled={!signedFile}
-                className="bg-brand-400 hover:bg-brand-500"
-              >
-                <PenLine className="h-4 w-4 mr-2" />
-                Confirmar Assinatura Gov.br
-              </Button>
+  onClick={handleGovBrSignature}
+  disabled={!signedFile || !isValidEmail || !hasValidSignature}
+  className="bg-brand-400 hover:bg-brand-500"
+>
+  <PenLine className="h-4 w-4 mr-2" />
+  Confirmar Assinatura Gov.br
+</Button>
             </DialogFooter>
           </div>
         )}

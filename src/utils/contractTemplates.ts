@@ -37,6 +37,22 @@ interface ContractValues {
   additionalClauses?: string;
 }
 
+const getPaymentTerms = (paymentOption: string, amount: string) => {
+  switch (paymentOption) {
+    case 'full':
+      return `O valor total de R$ ${amount}, a ser pago à vista.`;
+    case 'split_2':
+      return `O valor total de R$ ${amount}, a ser pago em 2 parcelas, sendo 50% (R$ ${(parseFloat(amount.replace('.', '').replace(',', '.')) / 2).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}) no início do projeto e 50% na entrega final.`;
+    case 'split_3':
+      const thirdValue = (parseFloat(amount.replace('.', '').replace(',', '.')) / 3).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+      return `O valor total de R$ ${amount}, a ser pago em 3 parcelas iguais de R$ ${thirdValue}.`;
+    case 'split_custom':
+      return `O valor total de R$ ${amount}, a ser pago conforme acordo específico entre as partes.`;
+    default:
+      return `O valor total de R$ ${amount}.`;
+  }
+};
+
 export const generateFreelancerContract = (values) => {
     const today = new Date().toLocaleDateString("pt-BR");
 
@@ -77,9 +93,12 @@ Este contrato entra em vigor na data de sua assinatura e terá validade de ${
     }, podendo ser prorrogado por mútuo acordo entre as partes.
 <br>
 <strong>CLÁUSULA 5ª – DO PAGAMENTO</strong>
-A CONTRATANTE pagará ao CONTRATADO o valor de R$ ${values.amount}, em ${
+  ${getPaymentTerms(values.paymentOption, values.amount)}, através de ${values.paymentMethod}. Eventuais despesas extras devem ser previamente autorizadas pela CONTRATANTE.
+  O valor acordado pelos serviços prestados é de R$ ${
+    values.amount
+  }, a ser pago em ${
       values.paymentMethod
-    }. Eventuais despesas extras devem ser previamente autorizadas pela CONTRATANTE.
+    }. O não cumprimento do pagamento poderá implicar em suspensão dos serviços.
 <br>
 <strong>CLÁUSULA 6ª – DA CONFIDENCIALIDADE</strong>
 Ambas as partes se comprometem a manter sigilo sobre todas as informações trocadas em razão deste contrato, não podendo divulgá-las a terceiros sem autorização expressa.
@@ -92,7 +111,7 @@ Para dirimir quaisquer controvérsias oriundas deste contrato, as partes elegem 
 
 ${
   values.additionalClauses
-    ? `>strong>CLÁUSULA 9ª – DISPOSIÇÕES ADICIONAIS</strong>\n${values.additionalClauses}\n\n`
+    ? `<strong>CLÁUSULA 9ª – DISPOSIÇÕES ADICIONAIS</strong>\n${values.additionalClauses}\n\n`
     : ""
 }
 E, por estarem assim justos e contratados, firmam o presente instrumento digitalmente.
@@ -100,6 +119,7 @@ E, por estarem assim justos e contratados, firmam o presente instrumento digital
 ${today}
 <br>
 <strong>CONTRATANTE:</strong> ___________________________
+<br><br>
 <strong>CONTRATADO:</strong> ___________________________`;
   };
 
@@ -117,27 +137,21 @@ Pelo presente instrumento particular, as partes identificadas a seguir:
     }, com sede ou residência em ${values.companyAddress};
   
   <strong>CONTRATADO (DESIGNER):</strong> ${
-    values.designerName
-  }, inscrito(a) no CPF sob o nº ${values.designerDocument}, residente em ${
-      values.designerAddress
+    values.freelancerName
+  }, inscrito(a) no CPF sob o nº ${values.freelancerCpf}, residente em ${
+      values.freelancerAddress
     };
   
 Têm entre si justo e contratado o que segue:
-  
   <br>
-  
   <strong>CLÁUSULA 1ª – DO OBJETO</strong>
   O presente contrato tem como objeto a prestação de serviços de design gráfico, consistindo na criação de ${
     values.designType
   }, conforme briefing e orientações fornecidas pela CONTRATANTE.
-  
   <br>
-  
   <strong>CLÁUSULA 2ª – DA ENTREGA E FORMATO</strong>
   O CONTRATADO compromete-se a entregar os materiais em formato digital, nos padrões previamente combinados (ex: .PNG, .JPG, .AI, .PSD, .PDF), dentro do prazo estipulado. Caso haja necessidade de impressão, as especificações deverão ser detalhadas pela CONTRATANTE com antecedência.
-  
   <br>
-  
   <strong>CLÁUSULA 3ª – DAS OBRIGAÇÕES DO CONTRATADO</strong>
   O CONTRATADO compromete-se a:
   <br>
@@ -145,51 +159,38 @@ Têm entre si justo e contratado o que segue:
   Submeter o material para aprovação da CONTRATANTE antes da entrega final;
   Corrigir eventuais ajustes solicitados dentro do escopo original;
   Não reutilizar ou revender os materiais criados para terceiros, salvo acordo prévio.
-  
   <br>
-  
   <strong>CLÁUSULA 4ª – DAS OBRIGAÇÕES DA CONTRATANTE</strong>
   Cabe à CONTRATANTE:
   <br>
   Fornecer briefing claro, materiais de referência e todas as informações necessárias para o desenvolvimento do projeto;
   Responder às solicitações de aprovação e feedbacks dentro de prazo razoável;
   Realizar os pagamentos conforme acordado neste contrato.
-  
   <br>
-  
   <strong>CLÁUSULA 5ª – DO PAGAMENTO</strong>
+  ${getPaymentTerms(values.paymentOption, values.amount)}, através de ${values.paymentMethod}. Eventuais despesas extras devem ser previamente autorizadas pela CONTRATANTE.
   O valor acordado pelos serviços prestados é de R$ ${
     values.amount
   }, a ser pago em ${
       values.paymentMethod
     }. O não cumprimento do pagamento poderá implicar em suspensão dos serviços.
-  
   <br>
-  
   <strong>CLÁUSULA 6ª – DO PRAZO</strong>
   Os serviços contratados terão início em ${
     values.startDate
   } e prazo de conclusão estimado em ${
       values.deliveryDate
     }, podendo ser ajustado mediante acordo entre as partes.
-  
   <br>
-  
   <strong>CLÁUSULA 7ª – DA PROPRIEDADE INTELECTUAL</strong>
   Após a entrega final e o pagamento integral, os direitos sobre o material criado serão cedidos à CONTRATANTE, que poderá utilizá-los livremente. O CONTRATADO se reserva o direito de exibir os trabalhos no portfólio pessoal, salvo acordo em contrário.
-  
   <br>
-  
   <strong>CLÁUSULA 8ª – DA CONFIDENCIALIDADE</strong>
   Ambas as partes comprometem-se a manter confidenciais todas as informações trocadas durante a execução do projeto, sob pena de responsabilidade legal.
-  
   <br>
-  
   <strong>CLÁUSULA 9ª – DA RESCISÃO</strong>
   Este contrato poderá ser rescindido a qualquer momento por mútuo acordo, ou unilateralmente em caso de descumprimento de cláusulas, mediante notificação prévia com prazo de 30 dias. Em caso de rescisão após início dos trabalhos, o CONTRATADO poderá reter percentual proporcional ao trabalho executado.
-  
   <br>
-  
   <strong>CLÁUSULA 10ª – DO FORO</strong>
   Fica eleito o foro da comarca de São Paulo/SP, com renúncia de qualquer outro, por mais privilegiado que seja, para dirimir quaisquer controvérsias decorrentes deste contrato.
   
@@ -198,18 +199,13 @@ Têm entre si justo e contratado o que segue:
       ? `<br><br><strong>CLÁUSULA 11ª – DISPOSIÇÕES ADICIONAIS</strong><br>${values.additionalClauses}`
       : ""
   }
-  
   <br>
-  
   E, por estarem de pleno acordo, firmam o presente instrumento digitalmente.
-  
   <br>
-  
   São Paulo, ${today}.
-  
   <br>
-  
   <strong>CONTRATANTE:</strong> ___________________________
+  <br><br>
   <strong>CONTRATADO (DESIGNER):</strong> ___________________________`;
   };
 
@@ -287,5 +283,6 @@ export const generateConsultingContract = (values) => {
   São Paulo, ${today}
   <br><br>
   <strong>CONTRATANTE:</strong> ___________________________
+  <br><br>
   <strong>CONSULTOR:</strong> ___________________________`;
   };

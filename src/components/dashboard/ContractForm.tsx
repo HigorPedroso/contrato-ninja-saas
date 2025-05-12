@@ -34,7 +34,7 @@ import { forwardRef } from "react";
 import {
   generateFreelancerContract,
   generateDesignContract,
-  generateConsultingContract
+  generateConsultingContract,
 } from "@/utils/contractTemplates";
 import InputMask from "react-input-mask";
 
@@ -74,6 +74,7 @@ const formSchema = z.object({
   reportDeliveryMethod: z.string().optional(),
   legalRepresentativeName: z.string().optional(),
   legalRepresentativeCpf: z.string().optional(),
+  paymentOption: z.string().optional(),
 });
 
 const ContractForm = () => {
@@ -120,6 +121,7 @@ const ContractForm = () => {
       reportDeliveryMethod: "",
       legalRepresentativeName: "",
       legalRepresentativeCpf: "",
+      paymentOption: "",
     }),
     []
   );
@@ -134,14 +136,18 @@ const ContractForm = () => {
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
       setIsSubmitting(true);
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
       if (userError) throw userError;
 
       const { canCreate, message } = await checkContractLimit();
       if (!canCreate && !isSubscribed) {
         toast({
           title: "Limite atingido",
-          description: message || "Você atingiu o limite de contratos do plano gratuito.",
+          description:
+            message || "Você atingiu o limite de contratos do plano gratuito.",
           variant: "destructive",
         });
         setLimitReached(true);
@@ -481,7 +487,7 @@ const ContractForm = () => {
                     </FormItem>
                   )}
                 />
-                
+
                 <FormField
                   control={form.control}
                   name="amount"
@@ -493,33 +499,39 @@ const ContractForm = () => {
                           required
                           placeholder="0,00"
                           {...field}
-                          onChange={(e) => field.onChange(currencyMask(e.target.value))}
+                          onChange={(e) =>
+                            field.onChange(currencyMask(e.target.value))
+                          }
                         />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-                
+
                 <FormField
                   control={form.control}
                   name="contractorDocument"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>CPF/CNPJ do Contratante</FormLabel>
-                              <FormControl>
-                                <MaskedInput
-                                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                                  mask={field.value?.length <= 14 ? "999.999.999-99" : "99.999.999/9999-99"}
-                                  required
-                                  placeholder="000.000.000-00"
-                                  {...field}
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
+                      <FormControl>
+                        <MaskedInput
+                          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                          mask={
+                            field.value?.length <= 14
+                              ? "999.999.999-99"
+                              : "99.999.999/9999-99"
+                          }
+                          required
+                          placeholder="000.000.000-00"
+                          {...field}
                         />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
                 <FormField
                   control={form.control}
@@ -534,6 +546,37 @@ const ContractForm = () => {
                           {...field}
                         />
                       </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="paymentOption"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Opção de Pagamento</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione a forma de pagamento" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="full">À vista</SelectItem>
+                          <SelectItem value="split_2">
+                            50% início e 50% final
+                          </SelectItem>
+                          <SelectItem value="split_3">3 parcelas</SelectItem>
+                          <SelectItem value="split_custom">
+                            Mais parcelas
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -580,12 +623,72 @@ const ContractForm = () => {
               <div className="grid sm:grid-cols-2 gap-6">
                 <FormField
                   control={form.control}
+                  name="freelancerName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Nome do Designer</FormLabel>
+                      <FormControl>
+                        <Input
+                          required
+                          placeholder="Nome completo"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="freelancerCpf"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>CPF do Designer</FormLabel>
+                      <FormControl>
+                        <MaskedInput
+                          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                          mask="999.999.999-99"
+                          required
+                          placeholder="000.000.000-00"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+<FormField
+                  control={form.control}
+                  name="freelancerAddress"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Endereço do Designer</FormLabel>
+                      <FormControl>
+                        <Input
+                          required
+                          placeholder="Endereço completo"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
                   name="companyName"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Nome da Empresa</FormLabel>
                       <FormControl>
-                        <Input required placeholder="Nome da empresa" {...field} />
+                        <Input
+                          required
+                          placeholder="Nome da empresa"
+                          {...field}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -599,7 +702,11 @@ const ContractForm = () => {
                     <FormItem>
                       <FormLabel>CNPJ da Empresa</FormLabel>
                       <FormControl>
-                        <Input required placeholder="00.000.000/0000-00" {...field} />
+                        <Input
+                          required
+                          placeholder="00.000.000/0000-00"
+                          {...field}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -613,7 +720,11 @@ const ContractForm = () => {
                     <FormItem>
                       <FormLabel>Endereço da Empresa</FormLabel>
                       <FormControl>
-                        <Input required placeholder="Endereço completo" {...field} />
+                        <Input
+                          required
+                          placeholder="Endereço completo"
+                          {...field}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -627,7 +738,11 @@ const ContractForm = () => {
                     <FormItem>
                       <FormLabel>Nome do Representante Legal</FormLabel>
                       <FormControl>
-                        <Input required placeholder="Nome completo" {...field} />
+                        <Input
+                          required
+                          placeholder="Nome completo"
+                          {...field}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -641,7 +756,11 @@ const ContractForm = () => {
                     <FormItem>
                       <FormLabel>CPF do Representante Legal</FormLabel>
                       <FormControl>
-                        <Input required placeholder="000.000.000-00" {...field} />
+                        <Input
+                          required
+                          placeholder="000.000.000-00"
+                          {...field}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -669,7 +788,12 @@ const ContractForm = () => {
                     <FormItem>
                       <FormLabel>Valor (R$)</FormLabel>
                       <FormControl>
-                        <Input required type="number" placeholder="0,00" {...field} />
+                        <Input
+                          required
+                          type="number"
+                          placeholder="0,00"
+                          {...field}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -683,7 +807,56 @@ const ContractForm = () => {
                     <FormItem>
                       <FormLabel>Forma de Pagamento</FormLabel>
                       <FormControl>
-                        <Input required placeholder="PIX, Transferência, etc" {...field} />
+                        <Input
+                          required
+                          placeholder="PIX, Transferência, etc"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="paymentOption"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Opção de Pagamento</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione a forma de pagamento" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="full">À vista</SelectItem>
+                          <SelectItem value="split_2">
+                            50% início e 50% final
+                          </SelectItem>
+                          <SelectItem value="split_3">3 parcelas</SelectItem>
+                          <SelectItem value="split_custom">
+                            Mais parcelas
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="deliveryDate"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Data de Entrega</FormLabel>
+                      <FormControl>
+                        <Input required type="date" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -718,7 +891,11 @@ const ContractForm = () => {
                     <FormItem>
                       <FormLabel>Nome da Empresa</FormLabel>
                       <FormControl>
-                        <Input required placeholder="Nome da empresa" {...field} />
+                        <Input
+                          required
+                          placeholder="Nome da empresa"
+                          {...field}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -732,7 +909,11 @@ const ContractForm = () => {
                     <FormItem>
                       <FormLabel>CNPJ da Empresa</FormLabel>
                       <FormControl>
-                        <Input required placeholder="00.000.000/0000-00" {...field} />
+                        <Input
+                          required
+                          placeholder="00.000.000/0000-00"
+                          {...field}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -746,7 +927,11 @@ const ContractForm = () => {
                     <FormItem>
                       <FormLabel>Endereço da Empresa</FormLabel>
                       <FormControl>
-                        <Input required placeholder="Endereço completo" {...field} />
+                        <Input
+                          required
+                          placeholder="Endereço completo"
+                          {...field}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -760,7 +945,11 @@ const ContractForm = () => {
                     <FormItem>
                       <FormLabel>Nome do Consultor</FormLabel>
                       <FormControl>
-                        <Input required placeholder="Nome completo" {...field} />
+                        <Input
+                          required
+                          placeholder="Nome completo"
+                          {...field}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -774,7 +963,11 @@ const ContractForm = () => {
                     <FormItem>
                       <FormLabel>CPF/CNPJ do Consultor</FormLabel>
                       <FormControl>
-                        <Input required placeholder="000.000.000-00" {...field} />
+                        <Input
+                          required
+                          placeholder="000.000.000-00"
+                          {...field}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -788,7 +981,11 @@ const ContractForm = () => {
                     <FormItem>
                       <FormLabel>Endereço do Consultor</FormLabel>
                       <FormControl>
-                        <Input required placeholder="Endereço completo" {...field} />
+                        <Input
+                          required
+                          placeholder="Endereço completo"
+                          {...field}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -802,7 +999,11 @@ const ContractForm = () => {
                     <FormItem>
                       <FormLabel>Área da Consultoria</FormLabel>
                       <FormControl>
-                        <Input required placeholder="Ex: Marketing, Finanças, etc" {...field} />
+                        <Input
+                          required
+                          placeholder="Ex: Marketing, Finanças, etc"
+                          {...field}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -830,7 +1031,11 @@ const ContractForm = () => {
                     <FormItem>
                       <FormLabel>Duração do Contrato</FormLabel>
                       <FormControl>
-                        <Input required placeholder="Ex: 6 meses, 1 ano" {...field} />
+                        <Input
+                          required
+                          placeholder="Ex: 6 meses, 1 ano"
+                          {...field}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -844,7 +1049,12 @@ const ContractForm = () => {
                     <FormItem>
                       <FormLabel>Valor (R$)</FormLabel>
                       <FormControl>
-                        <Input required type="number" placeholder="0,00" {...field} />
+                        <Input
+                          required
+                          type="number"
+                          placeholder="0,00"
+                          {...field}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -858,8 +1068,43 @@ const ContractForm = () => {
                     <FormItem>
                       <FormLabel>Forma de Pagamento</FormLabel>
                       <FormControl>
-                        <Input required placeholder="PIX, Transferência, etc" {...field} />
+                        <Input
+                          required
+                          placeholder="PIX, Transferência, etc"
+                          {...field}
+                        />
                       </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="paymentOption"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Opção de Pagamento</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione a forma de pagamento" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="full">À vista</SelectItem>
+                          <SelectItem value="split_2">
+                            50% início e 50% final
+                          </SelectItem>
+                          <SelectItem value="split_3">3 parcelas</SelectItem>
+                          <SelectItem value="split_custom">
+                            Mais parcelas
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -872,7 +1117,11 @@ const ContractForm = () => {
                     <FormItem>
                       <FormLabel>Frequência das Reuniões</FormLabel>
                       <FormControl>
-                        <Input required placeholder="Ex: Semanal, Quinzenal" {...field} />
+                        <Input
+                          required
+                          placeholder="Ex: Semanal, Quinzenal"
+                          {...field}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -886,7 +1135,11 @@ const ContractForm = () => {
                     <FormItem>
                       <FormLabel>Método de Entrega dos Relatórios</FormLabel>
                       <FormControl>
-                        <Input required placeholder="Ex: Email, Reunião Presencial" {...field} />
+                        <Input
+                          required
+                          placeholder="Ex: Email, Reunião Presencial"
+                          {...field}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -948,10 +1201,10 @@ const ContractForm = () => {
               )}
             </Button>
           </form>
-          </Form>
-              )}
-        </Card>
-      );
+        </Form>
+      )}
+    </Card>
+  );
 };
 
 export default ContractForm;

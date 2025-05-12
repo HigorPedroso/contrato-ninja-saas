@@ -27,6 +27,7 @@ import FAQ from "./pages/FAQ";
 import Terms from "@/pages/Terms";
 import Privacy from "./pages/Privacy";
 import LGPD from "./pages/LGPD";
+import SignaturePage from "./pages/signature/[id]";
 
 function App() {
   return (
@@ -62,6 +63,7 @@ function App() {
             <Route path="/termos" element={<Terms />} />
             <Route path="/privacidade" element={<Privacy />} />
             <Route path="/lgpd" element={<LGPD />} />
+            <Route path="/signature/:id" element={<SignaturePage />} />
           </Routes>
         </Router>
         <Toaster />
