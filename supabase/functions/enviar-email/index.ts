@@ -24,7 +24,7 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: 'Contrato Flash <noreply@seu-dominio.com>',
+        from: 'Contrato Flash <noreply@contratoflash.com.br>',
         to,
         subject,
         html,

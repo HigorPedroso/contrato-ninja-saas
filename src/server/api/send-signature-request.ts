@@ -25,7 +25,7 @@ router.post('/', async (req, res) => {
     `;
 
     await resend.emails.send({
-      from: 'Contrato Flash <noreply@seu-dominio.com>',
+      from: 'Contrato Flash <noreply@contratoflash.com.br>',
       to: clientEmail,
       subject: 'Solicitação de Assinatura Digital - Contrato Flash',
       html: emailContent,
