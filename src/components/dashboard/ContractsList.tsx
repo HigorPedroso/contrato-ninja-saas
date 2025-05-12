@@ -217,28 +217,39 @@ const ContractsList = () => {
 
       const sendSignatureRequestEmail = async (contractId: string, signedFileUrl: string, clientEmail: string) => {
         try {
-          const resend = new Resend(import.meta.env.VITE_RESEND_API_KEY);
+          const { data: { session } } = await supabase.auth.getSession();
+
+          const response = await fetch(
+            'https://vqhmhsmufgcoiajgxzmm.supabase.co/functions/v1/enviar-email',
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${session?.access_token}`,
+              },
+              body: JSON.stringify({
+                to: clientEmail,
+                subject: 'Solicitação de Assinatura Digital - Contrato Flash',
+                html: `
+                  <h2>Solicitação de Assinatura Digital</h2>
+                  <p>Um contrato está aguardando sua assinatura digital via Gov.br.</p>
+                  
+                  <h3>Passos para assinar:</h3>
+                  <ol>
+                    <li>Baixe o contrato já assinado pela outra parte: <a href="${signedFileUrl}">Download do Contrato</a></li>
+                    <li>Acesse o portal de assinaturas do Gov.br: <a href="https://assinador.iti.br">Assinador Gov.br</a></li>
+                    <li>Faça login com sua conta Gov.br (necessário nível Prata ou Ouro)</li>
+                    <li>Upload do PDF baixado e assine digitalmente</li>
+                    <li>Após assinar, faça upload do documento assinado: <a href="${window.location.origin}/signature/${contractId}">Upload do Contrato Assinado</a></li>
+                  </ol>
+                  
+                  <p><strong>Importante:</strong> Sua conta Gov.br precisa estar no nível Prata ou Ouro para que a assinatura tenha validade jurídica.</p>
+                `
+              }),
+            }
+          );
       
-          await resend.emails.send({
-            from: 'Contrato Flash <noreply@seu-dominio.com>',
-            to: clientEmail,
-            subject: 'Solicitação de Assinatura Digital - Contrato Flash',
-            html: `
-              <h2>Solicitação de Assinatura Digital</h2>
-              <p>Um contrato está aguardando sua assinatura digital via Gov.br.</p>
-              
-              <h3>Passos para assinar:</h3>
-              <ol>
-                <li>Baixe o contrato já assinado pela outra parte: <a href="${signedFileUrl}">Download do Contrato</a></li>
-                <li>Acesse o portal de assinaturas do Gov.br: <a href="https://assinador.iti.br">Assinador Gov.br</a></li>
-                <li>Faça login com sua conta Gov.br (necessário nível Prata ou Ouro)</li>
-                <li>Upload do PDF baixado e assine digitalmente</li>
-                <li>Após assinar, faça upload do documento assinado: <a href="${window.location.origin}/signature/${contractId}">Upload do Contrato Assinado</a></li>
-              </ol>
-              
-              <p><strong>Importante:</strong> Sua conta Gov.br precisa estar no nível Prata ou Ouro para que a assinatura tenha validade jurídica.</p>
-            `
-          });
+          if (!response.ok) throw new Error('Failed to send email');
       
           toast({
             title: "Email enviado",
