@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 
 export interface Contract {
+  content(content: any): unknown;
   id: string;
   title: string;
   client_name: string | null;
