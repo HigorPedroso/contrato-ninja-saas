@@ -2,14 +2,24 @@
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 
-export type Contract = {
+export interface Contract {
   id: string;
   title: string;
   client_name: string | null;
   type: string;
   created_at: string;
   status: 'draft' | 'active' | 'expired' | 'canceled';
-};
+  signature_status?: 'pending' | 'signed' | 'rejected' | 'expired';
+  signature_hash?: string;
+  signer_email?: string;
+  signed_at?: string;
+  signature_log?: {
+    ip: string;
+    timestamp: string;
+    method: string;
+    hash: string;
+  };
+}
 
 export async function fetchUserContracts(): Promise<Contract[]> {
   try {

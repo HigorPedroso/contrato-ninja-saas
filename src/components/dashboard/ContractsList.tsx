@@ -29,6 +29,15 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useActivity } from "@/hooks/useActivity";
 
+// Add this import at the top with other imports
+import { SHA256 } from "crypto-js";
+
+// Add new imports
+import { PenLine, ExternalLink, Upload, AlertCircle } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { Resend } from 'resend';
+
+
 const ContractsList = () => {
   const { trackActivity } = useActivity();
   const [contracts, setContracts] = useState<Contract[]>([]);
@@ -192,16 +201,172 @@ const ContractsList = () => {
     setSignatureDialog(true);
   };
 
-  // Check if contract type allows signature option
   const canAddSignature = (contract: Contract) => {
-    const allowedTypes = ['Freelancer', 'Design', 'Consultoria'];
-    return allowedTypes.includes(contract.type);
+    const allowedTypes = ['Freelancer', 'Design', 'Consultoria', 'Prestação de Serviços'];
+    return contract.status === 'active';
   };
 
   // Function to check if the contract type is restricted to premium users
   const isPremiumRestricted = (contractType: string) => {
     return contractType === 'Consultoria Empresarial' && !isSubscribed;
   };
+
+      const [signatureStatus, setSignatureStatus] = useState("");
+      const [signerEmail, setSignerEmail] = useState("");
+      const [clientEmail, setClientEmail] = useState("");
+
+      const sendSignatureRequestEmail = async (contractId: string, signedFileUrl: string, clientEmail: string) => {
+        try {
+          const resend = new Resend(import.meta.env.VITE_RESEND_API_KEY);
+      
+          await resend.emails.send({
+            from: 'Contrato Flash <noreply@seu-dominio.com>',
+            to: clientEmail,
+            subject: 'Solicitação de Assinatura Digital - Contrato Flash',
+            html: `
+              <h2>Solicitação de Assinatura Digital</h2>
+              <p>Um contrato está aguardando sua assinatura digital via Gov.br.</p>
+              
+              <h3>Passos para assinar:</h3>
+              <ol>
+                <li>Baixe o contrato já assinado pela outra parte: <a href="${signedFileUrl}">Download do Contrato</a></li>
+                <li>Acesse o portal de assinaturas do Gov.br: <a href="https://assinador.iti.br">Assinador Gov.br</a></li>
+                <li>Faça login com sua conta Gov.br (necessário nível Prata ou Ouro)</li>
+                <li>Upload do PDF baixado e assine digitalmente</li>
+                <li>Após assinar, faça upload do documento assinado: <a href="${window.location.origin}/signature/${contractId}">Upload do Contrato Assinado</a></li>
+              </ol>
+              
+              <p><strong>Importante:</strong> Sua conta Gov.br precisa estar no nível Prata ou Ouro para que a assinatura tenha validade jurídica.</p>
+            `
+          });
+      
+          toast({
+            title: "Email enviado",
+            description: "O cliente foi notificado sobre a assinatura pendente.",
+          });
+        } catch (error) {
+          console.error('Error sending email:', error);
+          toast({
+            title: "Erro ao enviar email",
+            description: "Não foi possível notificar o cliente.",
+            variant: "destructive",
+          });
+        }
+      };
+      
+      // Update signature dialog to handle LibreSign
+      const handleSignatureRequest = async (contract: Contract) => {
+        try {
+          // Generate document hash
+          const documentHash = SHA256(contract.content).toString();
+          
+          // Initialize signature request
+          const signatureUrl = await initializeSignature({
+            contractId: contract.id,
+            documentHash,
+            signerEmail,
+            contractTitle: contract.title,
+            callbackUrl: `${window.location.origin}/api/signature-callback`
+          });
+      
+          // Update contract status
+          await handleStatusUpdate(contract.id, "pending_signature");
+          
+          toast({
+            title: "Solicitação de assinatura enviada",
+            description: "Um email será enviado para o signatário com as instruções.",
+          });
+      
+          setSignatureDialog(false);
+        } catch (error) {
+          console.error("Error requesting signature:", error);
+          toast({
+            title: "Erro na solicitação",
+            description: "Não foi possível iniciar o processo de assinatura.",
+            variant: "destructive",
+          });
+        }
+      };
+      
+      // Add new states
+      const [signedFile, setSignedFile] = useState<File | null>(null);
+      const [uploadProgress, setUploadProgress] = useState(0);
+      
+      // Add new function for handling file upload
+      const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (file && file.type === "application/pdf") {
+          setSignedFile(file);
+        } else {
+          toast({
+            title: "Arquivo inválido",
+            description: "Por favor, selecione um arquivo PDF.",
+            variant: "destructive",
+          });
+        }
+      };
+      
+      // Update the handleGovBrSignature function
+      const handleGovBrSignature = async () => {
+        if (!signedFile || !selectedContract || !clientEmail) return;
+      
+        try {
+          setUploadProgress(0);
+          const fileName = `${selectedContract.id}_signed_${Date.now()}.pdf`;
+          
+          // Upload to Supabase Storage
+          const { data, error } = await supabase.storage
+            .from('signed-contracts')
+            .upload(fileName, signedFile, {
+              cacheControl: '3600',
+              upsert: false,
+              onUploadProgress: (progress) => {
+                setUploadProgress((progress.loaded / progress.total) * 100);
+              },
+            });
+      
+          if (error) throw error;
+      
+          // Get the public URL for the uploaded file
+          const { data: { publicUrl } } = supabase.storage
+            .from('signed-contracts')
+            .getPublicUrl(data.path);
+      
+          // Update contract status using an existing valid status
+          const { error: updateError } = await supabase
+            .from('contracts')
+            .update({
+              status: 'draft', // Changed from 'pending_signature' to 'draft'
+              signed_file_path: data?.path,
+              signed_at: new Date().toISOString(),
+              signer_ip: await fetch('https://api.ipify.org?format=json').then(res => res.json()).then(data => data.ip),
+              client_email: clientEmail
+            })
+            .eq('id', selectedContract.id);
+      
+          if (updateError) throw updateError;
+      
+          // Send email to client
+          await sendSignatureRequestEmail(selectedContract.id, publicUrl, clientEmail);
+      
+          toast({
+            title: "Contrato assinado",
+            description: "O PDF assinado foi enviado e o cliente foi notificado.",
+          });
+      
+          setSignatureDialog(false);
+          setSignedFile(null);
+          setUploadProgress(0);
+          setClientEmail("");
+        } catch (error) {
+          console.error('Error uploading signed contract:', error);
+          toast({
+            title: "Erro no upload",
+            description: "Não foi possível processar o contrato assinado.",
+            variant: "destructive",
+          });
+        }
+      };
 
   return (
     <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
@@ -300,6 +465,16 @@ const ContractsList = () => {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end space-x-2">
+                      {canAddSignature(contract) && (              
+                      <Button 
+                      variant="ghost" 
+                      size="icon"
+                      onClick={() => openSignatureDialog(contract)}
+                      title="Assinar contrato"
+                      >
+                      <FileText className="h-4 w-4" />
+                      </Button>
+                      )}
                         <Button 
                           variant="ghost" 
                           size="icon"
@@ -428,56 +603,109 @@ const ContractsList = () => {
           )}
         </DialogContent>
       </Dialog>
-      
-      {/* Dialog para assinatura do contrato */}
-      <Dialog open={signatureDialog} onOpenChange={setSignatureDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Assinatura de Contrato</DialogTitle>
-          </DialogHeader>
-          
-          {selectedContract && (
+
+    <Dialog open={signatureDialog} onOpenChange={setSignatureDialog}>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>Assinatura via Gov.br</DialogTitle>
+        </DialogHeader>
+        
+        {selectedContract && (
+          <div className="space-y-4">
+            <div className="p-4 bg-amber-50 rounded border border-amber-200">
+              <p className="text-amber-800 text-sm flex items-center gap-2">
+                <AlertCircle className="h-4 w-4" />
+                Sua conta Gov.br precisa estar no nível Prata ou Ouro para assinatura digital válida
+              </p>
+            </div>
+    
             <div className="space-y-4">
-              <p>Você está prestes a assinar o contrato <strong>{selectedContract.title}</strong>.</p>
-              
-              <div className="p-4 bg-amber-50 rounded border border-amber-200">
-                <p className="text-amber-800 text-sm">
-                  Ao assinar este contrato, você concorda com todos os termos e condições estabelecidos neste documento.
+              <h4 className="font-medium">Passos para assinatura:</h4>
+              <ol className="space-y-3 text-sm">
+                <li className="flex items-start gap-2">
+                  <span className="bg-gray-100 rounded-full w-5 h-5 flex items-center justify-center flex-shrink-0">1</span>
+                  <span>Baixe o contrato em PDF clicando no botão abaixo</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="bg-gray-100 rounded-full w-5 h-5 flex items-center justify-center flex-shrink-0">2</span>
+                  <span>Acesse o portal de assinaturas do Gov.br</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="bg-gray-100 rounded-full w-5 h-5 flex items-center justify-center flex-shrink-0">3</span>
+                  <span>Faça upload do PDF e assine com sua conta Gov.br</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="bg-gray-100 rounded-full w-5 h-5 flex items-center justify-center flex-shrink-0">4</span>
+                  <span>Faça upload do PDF assinado de volta à plataforma</span>
+                </li>
+              </ol>
+    
+              <div className="flex gap-2 pt-2">
+                <Button
+                  variant="outline"
+                  onClick={() => downloadContract(selectedContract.id)}
+                >
+                  <Download className="h-4 w-4 mr-2" /> Baixar Contrato
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => window.open("https://assinador.iti.br/assinatura/index.xhtml", "_blank")}
+                >
+                  <ExternalLink className="h-4 w-4 mr-2" /> Acessar Gov.br
+                </Button>
+              </div>
+    
+              <div className="border-t pt-4 mt-4">
+              <label className="block text-sm font-medium mb-2">
+    Email do Cliente
+  </label>
+  <Input
+    type="email"
+    value={clientEmail}
+    onChange={(e) => setClientEmail(e.target.value)}
+    placeholder="cliente@email.com"
+    className="mb-4"
+  />
+                <label className="block text-sm font-medium mb-2">
+                  Upload do Contrato Assinado
+                </label>
+                <Input
+                  type="file"
+                  accept=".pdf"
+                  onChange={handleFileUpload}
+                  className="mb-2"
+                />
+                {uploadProgress > 0 && (
+                  <div className="w-full bg-gray-200 rounded-full h-2.5 mb-4">
+                    <div 
+                      className="bg-brand-400 h-2.5 rounded-full transition-all" 
+                      style={{ width: `${uploadProgress}%` }}
+                    ></div>
+                  </div>
+                )}
+                <p className="text-xs text-gray-500">
+                  Faça upload do PDF após assiná-lo no Gov.br
                 </p>
               </div>
-              
-              {/* Placeholder for signature field - would need a signature component in a real app */}
-              <div className="border-2 border-dashed border-gray-300 rounded-md h-32 flex items-center justify-center bg-gray-50">
-                <p className="text-gray-500">Digite seu nome completo para assinar</p>
-              </div>
-              
-              <Input 
-                placeholder="Seu nome completo" 
-                className="w-full"
-              />
-              
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setSignatureDialog(false)}>
-                  Cancelar
-                </Button>
-                <Button 
-                  className="bg-brand-400 hover:bg-brand-500"
-                  onClick={() => {
-                    toast({
-                      title: "Contrato assinado",
-                      description: "O contrato foi assinado com sucesso."
-                    });
-                    setSignatureDialog(false);
-                    handleStatusUpdate(selectedContract.id, "active");
-                  }}
-                >
-                  Assinar Contrato
-                </Button>
-              </DialogFooter>
             </div>
-          )}
-        </DialogContent>
-      </Dialog>
+    
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setSignatureDialog(false)}>
+                Cancelar
+              </Button>
+              <Button
+                onClick={handleGovBrSignature}
+                disabled={!signedFile}
+                className="bg-brand-400 hover:bg-brand-500"
+              >
+                <PenLine className="h-4 w-4 mr-2" />
+                Confirmar Assinatura Gov.br
+              </Button>
+            </DialogFooter>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
     </div>
   );
 };
