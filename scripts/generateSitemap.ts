@@ -13,7 +13,12 @@ const generateSitemap = async () => {
   const staticRoutes = [
     { url: '/', changefreq: 'daily', priority: 1.0 },
     { url: '/blog', changefreq: 'daily', priority: 0.8 },
-    // ... other static routes
+    { url: '/contato', changefreq: 'daily', priority: 0.6 },
+    { url: '/sobre', changefreq: 'daily', priority: 0.6 },
+    { url: '/privacidade', changefreq: 'daily', priority: 0.6 },
+    { url: '/faq', changefreq: 'daily', priority: 0.6 },
+    { url: '/termos', changefreq: 'daily', priority: 0.6 },
+    { url: '/lgpd', changefreq: 'daily', priority: 0.6 },
   ];
 
   for (const route of staticRoutes) {
