@@ -1,4 +1,5 @@
 import { useActivity } from "@/hooks/useActivity";
+import { useEffect } from "react";
 
 // Inside your component
 const { trackActivity } = useActivity();

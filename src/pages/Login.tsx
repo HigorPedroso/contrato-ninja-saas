@@ -64,7 +64,9 @@ const Login = () => {
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: `${window.location.origin}/dashboard`,
+          redirectTo: import.meta.env.VITE_APP_URL 
+            ? `${import.meta.env.VITE_APP_URL}/dashboard`
+            : `${window.location.origin}/dashboard`,
         },
       });
 
@@ -72,7 +74,6 @@ const Login = () => {
         throw error;
       }
       
-      // Note: The redirect happens automatically by Supabase
       toast({
         title: "Redirecionando para autenticação do Google",
         description: "Você será redirecionado para fazer login com sua conta Google.",
