@@ -65,8 +65,8 @@ const Login = () => {
         provider: "google",
         options: {
           redirectTo: import.meta.env.VITE_APP_URL 
-            ? `${import.meta.env.VITE_APP_URL}/dashboard`
-            : `${window.location.origin}/dashboard`,
+            ? `https://contratoflash.com.br/dashboard`
+            : `https://contratoflash.com.br/dashboard`,
         },
       });
 

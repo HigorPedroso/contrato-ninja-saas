@@ -128,9 +128,10 @@ const SubscriptionPage = () => {
         "Contratos ilimitados",
         "Todos os modelos premium",
         "Personalização avançada",
-        "Criação de posts no blog",
+        "Verificação de Assinatura válida",
         "Suporte prioritário",
         "Sem marca d'água nos PDFs",
+        "Seu contrato sempre na nuvem"
       ],
       priceId: "price_premium",
       featured: true,

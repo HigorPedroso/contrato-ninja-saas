@@ -8,7 +8,6 @@ import {
   AlertTriangle,
   X,
 } from "lucide-react";
-import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -46,6 +45,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useActivity } from "@/hooks/useActivity";
 import { PDFDocument } from "pdf-lib";
+import { Link, useNavigate } from "react-router-dom";
 
 // Add this import at the top with other imports
 import { SHA256 } from "crypto-js";
@@ -64,6 +64,8 @@ const ContractsList = () => {
   const [openDialog, setOpenDialog] = useState(false);
   const [signatureDialog, setSignatureDialog] = useState(false);
   const { isSubscribed } = useAuth();
+  const [showPremiumAlert, setShowPremiumAlert] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const loadContracts = async () => {
@@ -340,6 +342,14 @@ const ContractsList = () => {
     const email = e.target.value;
     setClientEmail(email);
     setIsValidEmail(validateEmail(email));
+  };
+
+  const handleSignatureClick = (contract: Contract) => {
+    if (!isSubscribed) {
+      setShowPremiumAlert(true);
+      return;
+    }
+    openSignatureDialog(contract);
   };
 
   const sendSignatureRequestEmail = async (
@@ -757,16 +767,6 @@ const ContractsList = () => {
                           </Button>
                         ) : (
                           <>
-                            {canAddSignature(contract) && (
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => openSignatureDialog(contract)}
-                                title="Assinar contrato"
-                              >
-                                <FileText className="h-4 w-4" />
-                              </Button>
-                            )}
                             <Button
                               variant="ghost"
                               size="icon"
@@ -785,22 +785,6 @@ const ContractsList = () => {
                             </Button>
                           </>
                         )}
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => viewContract(contract.id)}
-                          title="Visualizar contrato"
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => downloadContract(contract.id)}
-                          title="Baixar contrato"
-                        >
-                          <Download className="h-4 w-4" />
-                        </Button>
 
                         {/* Status update dropdown */}
                         <DropdownMenu>
@@ -854,15 +838,15 @@ const ContractsList = () => {
                           </DropdownMenuContent>
                         </DropdownMenu>
                         {canAddSignature(contract) && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="ml-2 text-xs"
-                            onClick={() => openSignatureDialog(contract)}
-                          >
-                            Assinar
-                          </Button>
-                        )}
+  <Button
+    variant="outline"
+    size="sm"
+    className="ml-2 text-xs"
+    onClick={() => handleSignatureClick(contract)}
+  >
+    Assinar Contrato
+  </Button>
+)}
                       </div>
                     </TableCell>
                   </TableRow>
@@ -1056,6 +1040,52 @@ const ContractsList = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      <Dialog open={showPremiumAlert} onOpenChange={setShowPremiumAlert}>
+  <DialogContent className="max-w-md">
+    <DialogHeader>
+      <DialogTitle>Recurso Premium</DialogTitle>
+    </DialogHeader>
+    <div className="space-y-4">
+      <div className="p-4 bg-amber-50 rounded-lg">
+        <h4 className="font-medium text-amber-900 mb-2">
+          Assine o plano Premium para:
+        </h4>
+        <ul className="space-y-2 text-sm text-amber-800">
+          <li className="flex items-center gap-2">
+            <Check className="h-4 w-4" /> Assinatura digital via Gov.br
+          </li>
+          <li className="flex items-center gap-2">
+            <Check className="h-4 w-4" /> Contratos de consultoria empresarial
+          </li>
+          <li className="flex items-center gap-2">
+            <Check className="h-4 w-4" /> Modelos premium exclusivos
+          </li>
+          <li className="flex items-center gap-2">
+            <Check className="h-4 w-4" /> Suporte prioritário
+          </li>
+        </ul>
+      </div>
+      <DialogFooter>
+        <Button
+          variant="outline"
+          onClick={() => setShowPremiumAlert(false)}
+        >
+          Depois
+        </Button>
+        <Button 
+          className="bg-brand-400 hover:bg-brand-500"
+          onClick={() => {
+            setShowPremiumAlert(false);
+            navigate('/dashboard/assinatura');
+          }}
+        >
+          Assinar Premium
+        </Button>
+      </DialogFooter>
+    </div>
+  </DialogContent>
+</Dialog>
     </div>
   );
 };
