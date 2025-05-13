@@ -3,7 +3,7 @@ import { createWriteStream } from 'fs';
 import { supabase } from '../src/integrations/supabase/client';
 
 const generateSitemap = async () => {
-  const hostname = 'https://contratoninja.com.br';
+  const hostname = 'https://contratoflash.com.br';
   const smStream = new SitemapStream({ hostname });
   const writeStream = createWriteStream('public/sitemap.xml');
 
