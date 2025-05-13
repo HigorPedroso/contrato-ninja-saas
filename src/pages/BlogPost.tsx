@@ -307,14 +307,15 @@ const BlogPost = () => {
                     dangerouslySetInnerHTML={{ __html: post?.content || '' }}
                     className="
                       prose prose-lg max-w-none
-                      prose-a:text-brand-400
+                      prose-a:text-blue-600
                       prose-a:font-medium
                       prose-a:no-underline
                       prose-a:border-b-2
-                      prose-a:border-brand-200
+                      prose-a:border-blue-200
                       prose-a:transition-all
-                      hover:prose-a:border-brand-400
-                      hover:prose-a:text-brand-500
+                      hover:prose-a:border-blue-600
+                      hover:prose-a:text-blue-700
+                      prose prose-blue
                     "
                   />
                 </div>

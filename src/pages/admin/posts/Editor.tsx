@@ -13,7 +13,6 @@ import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import Sidebar from "@/components/dashboard/Sidebar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-// Add to interfaces
 interface Author {
   id: string;
   name: string;
@@ -21,7 +20,12 @@ interface Author {
   image_url: string;
 }
 
-// Add to PostFormData interface
+interface Category {
+  id: string;
+  name: string;
+  slug: string;
+}
+
 interface PostFormData {
   title: string;
   slug: string;
@@ -34,21 +38,14 @@ interface PostFormData {
   authorSlug: string;
 }
 
-interface Category {
-  id: string;
-  name: string;
-  slug: string;
-}
-
-
-// Update component name and initial checks
 const PostEditor = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
-  
-  const [isLoading, setIsLoading] = useState(true); // Add loading state
+
+  const [isLoading, setIsLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
   const [authors, setAuthors] = useState<Author[]>([]);
   const [formData, setFormData] = useState<PostFormData>({
@@ -63,7 +60,32 @@ const PostEditor = () => {
     authorSlug: "",
   });
 
-  // Fetch post data
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [categoriesRes, authorsRes] = await Promise.all([
+          supabase.from('categories').select('*').order('name'),
+          supabase.from('authors').select('*').order('name'),
+        ]);
+
+        if (categoriesRes.error) throw categoriesRes.error;
+        if (authorsRes.error) throw authorsRes.error;
+
+        setCategories(categoriesRes.data || []);
+        setAuthors(authorsRes.data || []);
+      } catch (error: any) {
+        console.error('Error fetching data:', error);
+        toast({
+          title: "Erro ao carregar dados",
+          description: "Não foi possível carregar categorias ou autores.",
+          variant: "destructive",
+        });
+      }
+    };
+
+    fetchData();
+  }, []);
+
   useEffect(() => {
     const fetchPost = async () => {
       if (!id) {
@@ -79,12 +101,9 @@ const PostEditor = () => {
           .eq('id', id)
           .single();
 
-        console.log('Fetching post...', { id, data, error });
-
         if (error) throw error;
-        if (!data) throw new Error('Post not found');
+        if (!data) throw new Error('Post não encontrado');
 
-        // Update form data
         setFormData({
           title: data.title || '',
           slug: data.slug || '',
@@ -97,19 +116,18 @@ const PostEditor = () => {
           authorSlug: data.author_slug || '',
         });
 
-        // Handle image preview
         if (data.featured_image) {
           const { data: imageData } = await supabase.storage
             .from('blog-images')
             .getPublicUrl(data.featured_image);
-          
+
           const imagePreview = document.getElementById('imagePreview');
-          if (imagePreview && imageData) {
+          if (imagePreview && imageData?.publicUrl) {
             imagePreview.innerHTML = `<img src="${imageData.publicUrl}" alt="Preview" class="mt-2 max-w-xs rounded-lg shadow-sm" />`;
           }
         }
       } catch (error: any) {
-        console.error('Error:', error);
+        console.error('Erro:', error);
         toast({
           title: "Erro ao carregar post",
           description: error.message,
@@ -124,76 +142,6 @@ const PostEditor = () => {
     fetchPost();
   }, [id, navigate]);
 
-  // Return loading state while data is being fetched
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex">
-        <Sidebar />
-        <div className="flex-1 lg:ml-64">
-          <DashboardHeader
-            title="Editar Postagem"
-            description="Carregando dados..."
-          />
-          <main className="container mx-auto px-6 py-8">
-            <Card>
-              <CardContent className="flex items-center justify-center py-8">
-                <div>Carregando...</div>
-              </CardContent>
-            </Card>
-          </main>
-        </div>
-      </div>
-    );
-  }
-  // Add these useEffects after the existing post fetch useEffect
-  useEffect(() => {
-    const fetchCategories = async () => {
-      const { data, error } = await supabase
-        .from('categories')
-        .select('*')
-        .order('name');
-      
-      if (error) {
-        console.error('Error fetching categories:', error);
-        toast({
-          title: "Erro ao carregar categorias",
-          description: "Não foi possível carregar as categorias.",
-          variant: "destructive",
-        });
-        return;
-      }
-      
-      setCategories(data || []);
-    };
-
-    fetchCategories();
-  }, []);
-
-  useEffect(() => {
-    const fetchAuthors = async () => {
-      const { data, error } = await supabase
-        .from('authors')
-        .select('*')
-        .order('name');
-      
-      if (error) {
-        console.error('Error fetching authors:', error);
-        toast({
-          title: "Erro ao carregar autores",
-          description: "Não foi possível carregar os autores.",
-          variant: "destructive",
-        });
-        return;
-      }
-      
-      setAuthors(data || []);
-    };
-
-    fetchAuthors();
-  }, []);
-
-  // Update handleSubmit to handle both create and update
-  // Update the handleSubmit function
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -250,15 +198,29 @@ const PostEditor = () => {
     }
   };
 
-  // Update the header and button text
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex">
+        <Sidebar />
+        <div className="flex-1 lg:ml-64">
+          <DashboardHeader title="Editar Postagem" description="Carregando dados..." />
+          <main className="container mx-auto px-6 py-8">
+            <Card>
+              <CardContent className="flex items-center justify-center py-8">
+                <div>Carregando...</div>
+              </CardContent>
+            </Card>
+          </main>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 flex">
       <Sidebar />
       <div className="flex-1 lg:ml-64">
-        <DashboardHeader
-          title="Editar Postagem"
-          description="Edite os detalhes do post"
-        />
+        <DashboardHeader title="Editar Postagem" description="Edite os detalhes do post" />
         <main className="container mx-auto px-6 py-8">
           <Card>
             <CardHeader>
@@ -284,12 +246,7 @@ const PostEditor = () => {
 
                 <div className="space-y-2">
                   <Label htmlFor="slug">Slug</Label>
-                  <Input
-                    id="slug"
-                    value={formData.slug}
-                    readOnly
-                    className="bg-gray-50"
-                  />
+                  <Input id="slug" value={formData.slug} readOnly className="bg-gray-50" />
                 </div>
 
                 <div className="space-y-2">
@@ -303,109 +260,88 @@ const PostEditor = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="excerpt">Excerpt</Label>
+                  <Label htmlFor="excerpt">Resumo</Label>
                   <Textarea
                     id="excerpt"
                     value={formData.excerpt}
                     onChange={(e) => setFormData({ ...formData, excerpt: e.target.value })}
-                    required
                   />
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="content">Conteúdo</Label>
                   <Editor
-                    key={formData.content} // Add key to force re-render when content changes
-                    apiKey="o628su2912ofptu58mzfax08z5284dya8pspcnpgm72ydvxq"
-                    init={{
-                      height: 500,
-                      menubar: true,
-                      plugins: [
-                        'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview',
-                        'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
-                        'insertdatetime', 'media', 'table', 'code', 'help', 'wordcount'
-                      ],
-                      toolbar: 'undo redo | blocks | bold italic forecolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | removeformat | help',
-                    }}
+                     apiKey={import.meta.env.VITE_TINYMCE_API_KEY}
                     value={formData.content}
                     onEditorChange={(content) => setFormData({ ...formData, content })}
+                    init={{ height: 400, menubar: false }}
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="featuredImage">Imagem Destacada</Label>
+                  <Label htmlFor="featuredImage">Imagem de Destaque</Label>
                   <Input
-                    id="featuredImage"
                     type="file"
+                    id="featuredImage"
                     accept="image/*"
-                    onChange={(e) => setFormData({ ...formData, featuredImage: e.target.files?.[0] || null })}
-                    required={!id}
+                    onChange={(e) =>
+                      setFormData({ ...formData, featuredImage: e.target.files?.[0] || null })
+                    }
                   />
-                  <div id="imagePreview" className="mt-2"></div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="author">Autor</Label>
-                    <Select
-                      value={formData.authorSlug}
-                      onValueChange={(value) => setFormData({ ...formData, authorSlug: value })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione um autor" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {authors.map((author) => (
-                          <SelectItem key={author.id} value={author.slug}>
-                            {author.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="category">Categoria</Label>
-                    <Select
-                      value={formData.category}
-                      onValueChange={(value) => setFormData({ ...formData, category: value })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione uma categoria" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {categories.map((category) => (
-                          <SelectItem key={category.id} value={category.slug}>
-                            {category.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+                  <div id="imagePreview"></div>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="publishedAt">Data de Publicação</Label>
+                  <Label htmlFor="category">Categoria</Label>
+                  <Select
+                    onValueChange={(value) => setFormData({ ...formData, category: value })}
+                    value={formData.category}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione uma categoria" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {categories.map((cat) => (
+                        <SelectItem key={cat.id} value={cat.slug}>
+                          {cat.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="author">Autor</Label>
+                  <Select
+                    onValueChange={(value) => setFormData({ ...formData, authorSlug: value })}
+                    value={formData.authorSlug}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione o autor" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {authors.map((author) => (
+                        <SelectItem key={author.id} value={author.slug}>
+                          {author.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="publishedAt">Publicado em</Label>
                   <Input
-                    id="publishedAt"
                     type="datetime-local"
-                    value={formData.publishedAt || ''}
+                    id="publishedAt"
+                    value={formData.publishedAt || ""}
                     onChange={(e) => setFormData({ ...formData, publishedAt: e.target.value })}
                   />
                 </div>
 
-                <div className="flex justify-end space-x-4">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => navigate('/admin')}
-                  >
-                    Cancelar
-                  </Button>
-                  <Button type="submit" disabled={loading}>
-                    {loading ? 'Salvando...' : 'Salvar Alterações'}
-                  </Button>
-                </div>
+                <Button type="submit" disabled={loading}>
+                  {loading ? "Salvando..." : "Salvar Alterações"}
+                </Button>
               </form>
             </CardContent>
           </Card>
