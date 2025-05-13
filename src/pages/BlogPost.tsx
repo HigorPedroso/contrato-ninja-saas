@@ -8,6 +8,12 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+// Add these imports
+import { Share2, Clock, ArrowLeft } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
+import { Separator } from "@/components/ui/separator";
+import { Helmet } from "react-helmet-async";
 
 interface BlogPost {
   id: string;
@@ -28,6 +34,14 @@ interface Author {
   slug: string;
   image_url: string;
 }
+
+// Add reading time calculation
+const calculateReadingTime = (content: string) => {
+  const wordsPerMinute = 200;
+  const words = content.split(/\s+/).length;
+  const minutes = Math.ceil(words / wordsPerMinute);
+  return minutes;
+};
 
 const BlogPost = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -97,15 +111,25 @@ const BlogPost = () => {
     return (
       <div className="min-h-screen flex flex-col">
         <Navbar />
-        <main className="flex-1 container mx-auto px-6 py-12">
-          <Skeleton className="h-12 w-3/4 mx-auto mb-4" />
-          <Skeleton className="h-6 w-1/3 mx-auto mb-12" />
-          <Skeleton className="h-64 w-full mb-8" />
-          <div className="space-y-4">
-            <Skeleton className="h-6 w-full" />
-            <Skeleton className="h-6 w-full" />
-            <Skeleton className="h-6 w-full" />
-            <Skeleton className="h-6 w-3/4" />
+        <main className="flex-1">
+          <Skeleton className="w-full h-[50vh] md:h-[60vh]" />
+          <div className="container mx-auto px-4 md:px-6 -mt-20 relative z-10">
+            <div className="max-w-4xl mx-auto">
+              <Skeleton className="h-12 w-3/4 mb-6" />
+              <Skeleton className="h-24 w-full mb-8" />
+              <div className="flex items-center mb-8">
+                <Skeleton className="h-12 w-12 rounded-full" />
+                <div className="ml-4">
+                  <Skeleton className="h-4 w-32 mb-2" />
+                  <Skeleton className="h-3 w-24" />
+                </div>
+              </div>
+              <div className="space-y-4">
+                {[...Array(6)].map((_, i) => (
+                  <Skeleton key={i} className="h-6 w-full" />
+                ))}
+              </div>
+            </div>
           </div>
         </main>
         <Footer />
@@ -130,55 +154,174 @@ const BlogPost = () => {
     );
   }
 
+  const handleShare = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: post?.title,
+          text: post?.excerpt,
+          url: window.location.href,
+        });
+      } catch (err) {
+        console.error("Error sharing:", err);
+      }
+    }
+  };
+
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-white">
+      <Helmet>
+        {/* Basic SEO */}
+        <title>{post?.title ? `${post.title} | Contrato Ninja` : 'Blog | Contrato Ninja'}</title>
+        <meta name="description" content={post?.excerpt || ''} />
+        <meta name="author" content={author?.name || 'Contrato Ninja'} />
+        <link rel="canonical" href={window.location.href} />
+
+        {/* Open Graph / Facebook */}
+        <meta property="og:type" content="article" />
+        <meta property="og:title" content={post?.title || ''} />
+        <meta property="og:description" content={post?.excerpt || ''} />
+        <meta property="og:image" content={post?.featured_image ? getImageUrl(post.featured_image) : ''} />
+        <meta property="og:url" content={window.location.href} />
+        <meta property="article:published_time" content={post?.published_at || post?.created_at || ''} />
+        <meta property="article:modified_time" content={post?.updated_at || ''} />
+        <meta property="article:author" content={author?.name || ''} />
+
+        {/* Twitter */}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={post?.title || ''} />
+        <meta name="twitter:description" content={post?.excerpt || ''} />
+        <meta name="twitter:image" content={post?.featured_image ? getImageUrl(post.featured_image) : ''} />
+
+        {/* Structured Data / JSON-LD */}
+        <script type="application/ld+json">
+          {JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "BlogPosting",
+            "headline": post?.title,
+            "image": post?.featured_image ? getImageUrl(post.featured_image) : '',
+            "datePublished": post?.published_at || post?.created_at,
+            "dateModified": post?.updated_at,
+            "author": {
+              "@type": "Person",
+              "name": author?.name
+            },
+            "publisher": {
+              "@type": "Organization",
+              "name": "Contrato Ninja",
+              "logo": {
+                "@type": "ImageObject",
+                "url": "https://your-domain.com/logo.png" // Update with your actual logo URL
+              }
+            },
+            "description": post?.excerpt,
+            "mainEntityOfPage": {
+              "@type": "WebPage",
+              "@id": window.location.href
+            }
+          })}
+        </script>
+      </Helmet>
+
       <Navbar />
       
       <main className="flex-1">
-        {/* Featured image */}
-        {post.featured_image && (
-          <div className="w-full h-[400px] bg-gray-100 relative">
-            <img
-              src={getImageUrl(post.featured_image)}
-              alt={post.title}
-              className="w-full h-full object-cover"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent"></div>
+        <article>
+          {/* Back button and reading time */}
+          <div className="container mx-auto px-4 py-4 md:py-6">
+            <div className="max-w-4xl mx-auto flex justify-between items-center">
+              <Link to="/blog" className="flex items-center text-gray-600 hover:text-gray-900 transition-colors">
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                <span>Voltar para o Blog</span>
+              </Link>
+              {post && (
+                <div className="flex items-center text-gray-500">
+                  <Clock className="h-4 w-4 mr-2" />
+                  <span>{calculateReadingTime(post.content)} min de leitura</span>
+                </div>
+              )}
+            </div>
           </div>
-        )}
-        
-        <div className="container mx-auto px-6 py-12">
-          <div className="max-w-3xl mx-auto">
-            <h1 className="text-4xl font-bold mb-6">{post.title}</h1>
-            
-            <div className="flex items-center mb-8">
-              <div className="flex items-center">
-                <Avatar className="h-10 w-10 mr-4">
-                  <AvatarImage src={author?.image_url} alt={author?.name} />
-                  <AvatarFallback>
-                    {author?.name ? author.name.charAt(0) : "A"}
-                  </AvatarFallback>
-                </Avatar>
-                <div>
-                  <p className="font-medium">{author?.name || "Autor desconhecido"}</p>
-                  <p className="text-sm text-gray-500">
-                    {formatDate(post.published_at || post.created_at)}
-                  </p>
+
+          {/* Hero Section */}
+          <div className="relative">
+            {post?.featured_image ? (
+              <div className="w-full h-[60vh] md:h-[70vh] relative overflow-hidden">
+                <img
+                  src={getImageUrl(post.featured_image)}
+                  alt={post.title}
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
+              </div>
+            ) : (
+              <div className="w-full h-[40vh] bg-gray-50" />
+            )}
+
+            {/* Title and Content Combined Section */}
+            <div className="container mx-auto px-4 md:px-8 -mt-32 relative z-10">
+              <div className="max-w-4xl mx-auto bg-white rounded-xl shadow-lg">
+                {/* Title Section */}
+                <div className="p-6 md:p-12 border-b border-gray-100">
+                  <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-6 leading-tight text-gray-900">
+                    {post?.title}
+                  </h1>
+                  
+                  <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
+                    {/* Author and Date */}
+                    <div className="flex items-center">
+                      <Avatar className="h-12 w-12">
+                        <AvatarImage src={author?.image_url} alt={author?.name} />
+                        <AvatarFallback className="bg-gray-100">
+                          {author?.name ? author.name.charAt(0) : "A"}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="ml-4">
+                        <p className="font-medium text-gray-900">{author?.name || "Autor desconhecido"}</p>
+                        <p className="text-sm text-gray-500">
+                          Publicado em {formatDate(post?.published_at || post?.created_at)}
+                        </p>
+                      </div>
+                    </div>
+                
+                    <Button
+                      variant="outline"
+                      className="flex items-center gap-2"
+                      onClick={handleShare}
+                    >
+                      <Share2 className="h-4 w-4" />
+                      Compartilhar
+                    </Button>
+                  </div>
+                
+                  {post?.excerpt && (
+                    <div className="text-lg md:text-xl text-gray-600 font-medium border-l-2 border-gray-200 pl-6 py-4">
+                      {post.excerpt}
+                    </div>
+                  )}
+                </div>
+
+                {/* Content Section */}
+                <div className="p-6 md:p-12">
+                  <div 
+                    dangerouslySetInnerHTML={{ __html: post?.content || '' }}
+                    className="
+                      prose prose-lg max-w-none
+                      prose-a:text-brand-400
+                      prose-a:font-medium
+                      prose-a:no-underline
+                      prose-a:border-b-2
+                      prose-a:border-brand-200
+                      prose-a:transition-all
+                      hover:prose-a:border-brand-400
+                      hover:prose-a:text-brand-500
+                    "
+                  />
                 </div>
               </div>
             </div>
-            
-            {post.excerpt && (
-              <div className="mb-8 text-lg text-gray-600 font-medium border-l-4 border-brand-400 pl-4">
-                {post.excerpt}
-              </div>
-            )}
-            
-            <div className="prose prose-lg max-w-none mb-12">
-              <div dangerouslySetInnerHTML={{ __html: post.content }} />
-            </div>
           </div>
-        </div>
+        </article>
       </main>
       
       <Footer />

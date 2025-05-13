@@ -9,11 +9,13 @@ export interface Contract {
   client_name: string | null;
   type: string;
   created_at: string;
-  status: 'draft' | 'active' | 'expired' | 'canceled';
+  status: 'draft' | 'active' | 'expired' | 'canceled' | 'signed';
   signature_status?: 'pending' | 'signed' | 'rejected' | 'expired';
   signature_hash?: string;
   signer_email?: string;
   signed_at?: string;
+  client_signed_file_path?: string;
+  signed_file_path?: string;
   signature_log?: {
     ip: string;
     timestamp: string;
@@ -32,7 +34,9 @@ export async function fetchUserContracts(): Promise<Contract[]> {
         client_name,
         contract_templates(template_type),
         created_at,
-        status
+        status,
+        client_signed_file_path,
+        signed_file_path
       `)
       .order('created_at', { ascending: false });
 
@@ -47,6 +51,7 @@ export async function fetchUserContracts(): Promise<Contract[]> {
     }
 
     // Transforma os dados para o formato esperado
+    // Update the data mapping
     return (data || []).map(contract => ({
       id: contract.id,
       title: contract.title,
@@ -54,6 +59,8 @@ export async function fetchUserContracts(): Promise<Contract[]> {
       type: contract.contract_templates?.template_type || "Personalizado",
       created_at: contract.created_at,
       status: contract.status,
+      client_signed_file_path: contract.client_signed_file_path,
+      signed_file_path: contract.signed_file_path,
     }));
   } catch (error) {
     console.error("Erro inesperado ao buscar contratos:", error);

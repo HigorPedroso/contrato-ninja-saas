@@ -28,10 +28,12 @@ import Terms from "@/pages/Terms";
 import Privacy from "./pages/Privacy";
 import LGPD from "./pages/LGPD";
 import SignaturePage from "./pages/signature/[id]";
+import PostEditor from "./pages/admin/posts/Editor";
+import { HelmetProvider } from 'react-helmet-async';
 
 function App() {
   return (
-    <>
+    <HelmetProvider>
       <AuthProvider>
         <Router>
           <Routes>
@@ -54,6 +56,7 @@ function App() {
             {/* Move blog management to admin section */}
             <Route path="/admin/blog" element={<ProtectedRoute adminOnly><BlogPosts /></ProtectedRoute>} />
             <Route path="/admin/posts/new" element={<ProtectedRoute><NewPost /></ProtectedRoute>} />
+            <Route path="/admin/posts/edit/:id" element={<ProtectedRoute><PostEditor /></ProtectedRoute>} />
             
             {/* Catch All */}
             <Route path="*" element={<NotFound />} />
@@ -64,11 +67,12 @@ function App() {
             <Route path="/privacidade" element={<Privacy />} />
             <Route path="/lgpd" element={<LGPD />} />
             <Route path="/signature/:id" element={<SignaturePage />} />
+
           </Routes>
         </Router>
         <Toaster />
       </AuthProvider>
-    </>
+    </HelmetProvider>
   );
 }
 
