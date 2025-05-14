@@ -107,6 +107,8 @@ serve(async (req) => {
     await supabaseAdmin.from("profiles").update({
       subscription_plan: hasActiveSubscription ? "premium" : "free",
       subscription_expires_at: subscriptionEnd,
+      stripe_customer_id: customerId,
+      stripe_subscription_id: hasActiveSubscription ? subscriptions.data[0].id : null
     }).eq("id", user.id);
 
     // Retornar o status da assinatura

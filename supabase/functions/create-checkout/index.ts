@@ -109,9 +109,16 @@ serve(async (req) => {
     }
 
     // Obter o preço do Stripe
-    const stripePriceId = Deno.env.get("STRIPE_PREMIUM_PRICE_ID");
+    let stripePriceId;
+    
+    if (priceId === 'price_premium_monthly') {
+      stripePriceId = Deno.env.get("STRIPE_PREMIUM_PRICE_ID");
+    } else if (priceId === 'price_premium_yearly') {
+      stripePriceId = Deno.env.get("STRIPE_PREMIUM_YEARLY_PRICE_ID");
+    }
+
     if (!stripePriceId) {
-      throw new Error("STRIPE_PREMIUM_PRICE_ID não está configurada");
+      throw new Error("Stripe price ID não está configurado");
     }
     
     console.log("Usando preço do Stripe:", stripePriceId);

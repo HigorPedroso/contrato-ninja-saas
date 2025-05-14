@@ -8,7 +8,6 @@ const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') ?? '', {
 })
 
 serve(async (req) => {
-  // Handle CORS preflight request
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
@@ -27,35 +26,74 @@ serve(async (req) => {
     } = await supabaseClient.auth.getUser()
 
     if (!user) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401,
-        headers: { 'Content-Type': 'application/json' },
-      })
+      throw new Error('Unauthorized')
     }
 
-    // Get customer's subscription
-    const { data: profile } = await supabaseClient
+    const { data: profile, error: profileError } = await supabaseClient
       .from('profiles')
       .select('stripe_customer_id, stripe_subscription_id')
       .eq('id', user.id)
       .single()
 
-    if (!profile?.stripe_subscription_id) {
+    if (profileError || !profile?.stripe_subscription_id) {
       throw new Error('No subscription found')
     }
 
-    // Cancel subscription at period end
-    await stripe.subscriptions.update(profile.stripe_subscription_id, {
-      cancel_at_period_end: true,
-    })
+    // Get current subscription
+    console.log('Buscando assinatura:', profile.stripe_subscription_id);
+    const currentSubscription = await stripe.subscriptions.retrieve(
+      profile.stripe_subscription_id
+    );
+    console.log('Assinatura atual:', currentSubscription);
 
-    return new Response(JSON.stringify({ message: 'Subscription cancelled' }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    })
+    if (!currentSubscription) {
+      throw new Error('Subscription not found in Stripe')
+    }
+
+    // Cancel subscription at period end instead of immediately
+    console.log('Tentando cancelar assinatura Stripe:', profile.stripe_subscription_id);
+    const subscription = await stripe.subscriptions.update(
+      profile.stripe_subscription_id,
+      {
+        cancel_at_period_end: true
+      }
+    );
+    console.log('Resultado do cancelamento:', subscription);
+
+    if (!subscription) {
+      throw new Error('Failed to cancel subscription')
+    }
+
+    // Update profile status but keep subscription data until period end
+    await supabaseClient
+      .from('profiles')
+      .update({ 
+        subscription_status: 'canceling',
+        subscription_expires_at: new Date(subscription.current_period_end * 1000).toISOString()
+      })
+      .eq('id', user.id)
+
+    return new Response(
+      JSON.stringify({ 
+        message: 'Subscription cancelled',
+        status: 'success'
+      }), 
+      {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      }
+    )
   } catch (error) {
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 400,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    })
+    console.error('Error:', error.message)
+    return new Response(
+      JSON.stringify({ 
+        error: error.message || 'An error occurred while canceling the subscription',
+        status: 'error'
+      }), 
+      {
+        status: 200, // Changed to 200 to avoid CORS issues
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      }
+    )
   }
 })

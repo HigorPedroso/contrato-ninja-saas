@@ -26,6 +26,7 @@ const SubscriptionPage = () => {
   const [loading, setLoading] = useState(false);
   const [showManageModal, setShowManageModal] = useState(false);
   const [cancelLoading, setCancelLoading] = useState(false);
+  const [isPreCanceling, setIsPreCanceling] = useState(false);
   
   const handleSubscribe = async (planId: string) => {
     if (!user) {
@@ -71,7 +72,7 @@ const SubscriptionPage = () => {
     
     setCancelLoading(true);
     try {
-      const { error } = await supabase.functions.invoke('cancel-subscription', {});
+      const { data, error } = await supabase.functions.invoke('cancel-subscription', {});
       
       if (error) throw error;
       
@@ -79,8 +80,8 @@ const SubscriptionPage = () => {
       setShowManageModal(false);
       
       toast({
-        title: "Assinatura cancelada",
-        description: "Sua assinatura foi cancelada com sucesso.",
+        title: "Assinatura será cancelada",
+        description: `Você continuará tendo acesso premium até ${formatDate(profile?.subscription_expires_at)}.`,
       });
     } catch (error: any) {
       console.error("Erro ao cancelar assinatura:", error);
@@ -124,8 +125,19 @@ const SubscriptionPage = () => {
           
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <Button variant="destructive" className="w-full">
-                Cancelar assinatura
+              <Button 
+                variant="destructive" 
+                className="w-full"
+                disabled={isPreCanceling}
+              >
+                {isPreCanceling ? (
+                  <div className="flex items-center justify-center">
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Cancelando...
+                  </div>
+                ) : (
+                  "Cancelar assinatura"
+                )}
               </Button>
             </AlertDialogTrigger>
             <AlertDialogContent>
@@ -141,35 +153,29 @@ const SubscriptionPage = () => {
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                <AlertDialogCancel>Voltar</AlertDialogCancel>
+                <AlertDialogCancel onClick={() => setIsPreCanceling(false)}>Voltar</AlertDialogCancel>
                 <AlertDialogAction
-                  onClick={handleCancelSubscription}
+                  onClick={async () => {
+                    setIsPreCanceling(true);
+                    await handleCancelSubscription();
+                    setIsPreCanceling(false);
+                  }}
                   disabled={cancelLoading}
                   className="bg-red-500 hover:bg-red-600"
                 >
                   {cancelLoading ? (
-                    <>
+                    <div className="flex items-center">
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Cancelando...
-                    </>
+                      Processando...
+                    </div>
                   ) : (
                     "Confirmar cancelamento"
                   )}
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
-          </AlertDialog>
+          </AlertDialog>        
           
-          <Button
-            variant="outline"
-            className="w-full"
-            onClick={() => {
-              setShowManageModal(false);
-              window.location.href = `${window.location.origin}/dashboard/subscription`;
-            }}
-          >
-            Atualizar forma de pagamento
-          </Button>
         </div>
       </DialogContent>
     </Dialog>
@@ -216,7 +222,7 @@ const SubscriptionPage = () => {
       featured: false,
     },
     {
-      name: "Premium",
+      name: "Premium Mensal",
       price: "R$ 19,90",
       period: "por mês",
       description: "Perfeito para freelancers e pequenas empresas",
@@ -229,7 +235,27 @@ const SubscriptionPage = () => {
         "Sem marca d'água nos PDFs",
         "Seu contrato sempre na nuvem"
       ],
-      priceId: "price_premium",
+      priceId: "price_premium_monthly",
+      featured: true,
+    },
+    {
+      name: "Premium Anual",
+      price: "R$ 190,90",
+      originalPrice: "R$ 238,80",
+      period: "por ano",
+      discount: "20% de desconto",
+      description: "Melhor custo-benefício",
+      features: [
+        "Contratos ilimitados",
+        "Todos os modelos premium",
+        "Personalização avançada",
+        "Verificação de Assinatura válida",
+        "Suporte prioritário",
+        "Sem marca d'água nos PDFs",
+        "Seu contrato sempre na nuvem",
+        "Economia de R$ 47,90"
+      ],
+      priceId: "price_premium_yearly",
       featured: true,
     }
   ];
@@ -287,7 +313,7 @@ const SubscriptionPage = () => {
           </Card>
           
           {/* Planos disponíveis */}
-          <div className="grid md:grid-cols-2 gap-8">
+          <div className="grid md:grid-cols-3 gap-6">
             {plans.map((plan, index) => {
               const isPlanActive = plan.name === "Gratuito" ? !isSubscribed : isSubscribed;
               
@@ -313,9 +339,23 @@ const SubscriptionPage = () => {
                     <div className="mb-4">
                       <span className="text-3xl font-bold">{plan.price}</span>
                       <span className="text-gray-500 ml-1">{plan.period}</span>
+                      {plan.originalPrice && (
+                        <div className="mt-1">
+                          <span className="text-sm text-gray-500 line-through">{plan.originalPrice}</span>
+                          <span className="ml-2 text-sm font-medium text-green-600">{plan.discount}</span>
+                        </div>
+                      )}
                     </div>
                     <p className="text-gray-600 mb-6">{plan.description}</p>
                     
+                    {plan.name === "Premium Anual" && (
+                      <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-6">
+                        <p className="text-green-700 font-medium text-center">
+                          Economize R$ 47,90 no plano anual! 🎉
+                        </p>
+                      </div>
+                    )}
+
                     <ul className="space-y-3 mb-8">
                       {plan.features.map((feature, i) => (
                         <li key={i} className="flex items-center">
