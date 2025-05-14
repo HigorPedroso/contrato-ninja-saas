@@ -89,7 +89,9 @@ const AdminDashboard = () => {
         const { data: usersData, error: usersError } = await supabase
           .from("profiles")
           .select("*")
-          .eq("subscription_plan", "premium");
+          .eq("subscription_plan", "premium")
+          .not("subscription_expires_at", "is", null) // Add this line to ensure we only get active subscriptions
+          .gte("subscription_expires_at", new Date().toISOString()); // Add this line to get only valid subscriptions
         
         if (usersError) throw usersError;
         setSubscribedUsers(usersData || []);
@@ -240,7 +242,7 @@ const AdminDashboard = () => {
                 </div>
               </div>
               <h3 className="text-2xl font-semibold">
-                {formatCurrency(payments.length * 1990)}
+                {formatCurrency(payments.reduce((total, payment) => total + payment.amount, 0))}
               </h3>
               <p className="text-gray-500">Receita Mensal</p>
             </Card>

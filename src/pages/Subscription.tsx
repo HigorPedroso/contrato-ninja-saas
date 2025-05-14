@@ -11,10 +11,21 @@ import { Check, Loader2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { CreditCard, AlertTriangle } from "lucide-react";
 
 const SubscriptionPage = () => {
   const { user, profile, isSubscribed, refreshProfile } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [showManageModal, setShowManageModal] = useState(false);
+  const [cancelLoading, setCancelLoading] = useState(false);
   
   const handleSubscribe = async (planId: string) => {
     if (!user) {
@@ -54,30 +65,115 @@ const SubscriptionPage = () => {
       setLoading(false);
     }
   };
-  
-  const handleManageSubscription = async () => {
+
+  const handleCancelSubscription = async () => {
     if (!user) return;
     
-    setLoading(true);
-    
+    setCancelLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('customer-portal', {});
+      const { error } = await supabase.functions.invoke('cancel-subscription', {});
       
       if (error) throw error;
       
-      // Redireciona para o portal do cliente Stripe
-      window.location.href = data.url;
-    } catch (error: any) {
-      console.error("Erro ao abrir portal do cliente:", error);
+      await refreshProfile();
+      setShowManageModal(false);
+      
       toast({
-        title: "Erro ao gerenciar assinatura",
-        description: "Não foi possível abrir o portal de gerenciamento. Tente novamente.",
+        title: "Assinatura cancelada",
+        description: "Sua assinatura foi cancelada com sucesso.",
+      });
+    } catch (error: any) {
+      console.error("Erro ao cancelar assinatura:", error);
+      toast({
+        title: "Erro ao cancelar assinatura",
+        description: "Não foi possível cancelar sua assinatura. Tente novamente.",
         variant: "destructive"
       });
     } finally {
-      setLoading(false);
+      setCancelLoading(false);
     }
   };
+  
+  const handleManageSubscription = () => {
+    setShowManageModal(true);
+  };
+
+  const ManageSubscriptionModal = () => (
+    <Dialog open={showManageModal} onOpenChange={setShowManageModal}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Gerenciar Assinatura</DialogTitle>
+          <DialogDescription>
+            Detalhes do seu plano Premium
+          </DialogDescription>
+        </DialogHeader>
+        
+        <div className="space-y-4 py-4">
+          <div className="flex items-center gap-4 rounded-lg border p-4">
+            <CreditCard className="h-6 w-6 text-brand-400" />
+            <div>
+              <p className="font-medium">Plano Premium</p>
+              <p className="text-sm text-gray-500">R$ 19,90/mês</p>
+            </div>
+          </div>
+          
+          <div>
+            <p className="text-sm text-gray-500 mb-2">Próxima cobrança:</p>
+            <p className="font-medium">{formatDate(profile?.subscription_expires_at)}</p>
+          </div>
+          
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="destructive" className="w-full">
+                Cancelar assinatura
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>
+                  <div className="flex items-center gap-2">
+                    <AlertTriangle className="h-5 w-5" />
+                    Cancelar assinatura
+                  </div>
+                </AlertDialogTitle>
+                <AlertDialogDescription>
+                  Tem certeza que deseja cancelar sua assinatura? Você perderá acesso aos recursos premium ao final do período atual.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Voltar</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={handleCancelSubscription}
+                  disabled={cancelLoading}
+                  className="bg-red-500 hover:bg-red-600"
+                >
+                  {cancelLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Cancelando...
+                    </>
+                  ) : (
+                    "Confirmar cancelamento"
+                  )}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+          
+          <Button
+            variant="outline"
+            className="w-full"
+            onClick={() => {
+              setShowManageModal(false);
+              window.location.href = `${window.location.origin}/dashboard/subscription`;
+            }}
+          >
+            Atualizar forma de pagamento
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
 
   // Verifica o status da assinatura ao carregar a página
   useEffect(() => {
@@ -262,6 +358,7 @@ const SubscriptionPage = () => {
           </div>
         </main>
       </div>
+      <ManageSubscriptionModal />
     </div>
   );
 };
