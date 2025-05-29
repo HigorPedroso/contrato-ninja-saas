@@ -1,19 +1,26 @@
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useGoogleAds } from "@/hooks/useGoogleAds";
+const { trackConversion } = useGoogleAds();
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { user, signOut } = useAuth();
   const isMobile = useIsMobile();
+  
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
   };
+
+  useEffect(() => {
+    trackConversion('AW-960025532');
+  })
 
   return (
     <nav className="bg-white shadow">

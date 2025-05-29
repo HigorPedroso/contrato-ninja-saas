@@ -1,5 +1,6 @@
 
 import { useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Home from "@/pages/Home";
 import Login from "@/pages/Login";
@@ -32,6 +33,15 @@ import PostEditor from "./pages/admin/posts/Editor";
 import { HelmetProvider } from 'react-helmet-async';
 
 function App() {
+  const location = useLocation();
+
+  useEffect(() => {
+    // Track page views
+    window.gtag?.('event', 'page_view', {
+      page_path: location.pathname + location.search
+    });
+  }, [location]);
+
   return (
     <HelmetProvider>
       <AuthProvider>
