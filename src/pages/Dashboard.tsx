@@ -10,9 +10,12 @@ import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { useGoogleAds } from "@/hooks/useGoogleAds";
+
 
 const Dashboard = () => {
   const { user, profile, refreshProfile } = useAuth();
+  const { trackConversion } = useGoogleAds();
   
   // Garantir que o perfil do usuário esteja atualizado
   useEffect(() => {
@@ -26,6 +29,10 @@ const Dashboard = () => {
     if (user?.user_metadata?.full_name) return user.user_metadata.full_name.split(' ')[0];
     return "usuário";
   };
+
+  useEffect(() => {
+    trackConversion('NejPCIvNgswaELyn48kD');
+  })
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
