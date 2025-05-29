@@ -33,19 +33,11 @@ import PostEditor from "./pages/admin/posts/Editor";
 import { HelmetProvider } from 'react-helmet-async';
 
 function App() {
-  const location = useLocation();
-
-  useEffect(() => {
-    // Track page views
-    window.gtag?.('event', 'page_view', {
-      page_path: location.pathname + location.search
-    });
-  }, [location]);
-
   return (
     <HelmetProvider>
       <AuthProvider>
         <Router>
+          <RouteTracker />
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/login" element={<Login />} />
@@ -80,10 +72,22 @@ function App() {
 
           </Routes>
         </Router>
-        <Toaster />
       </AuthProvider>
     </HelmetProvider>
   );
+}
+
+// Create a separate component for tracking
+function RouteTracker() {
+  const location = useLocation();
+
+  useEffect(() => {
+    window.gtag?.('event', 'page_view', {
+      page_path: location.pathname + location.search
+    });
+  }, [location]);
+
+  return null;
 }
 
 export default App;
