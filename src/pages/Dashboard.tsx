@@ -11,11 +11,13 @@ import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useGoogleAds } from "@/hooks/useGoogleAds";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 
 const Dashboard = () => {
   const { user, profile, refreshProfile } = useAuth();
   const { trackConversion } = useGoogleAds();
+  const isMobile = useIsMobile();
   
   // Garantir que o perfil do usuário esteja atualizado
   useEffect(() => {
@@ -44,37 +46,73 @@ const Dashboard = () => {
           description={`Bem-vindo de volta, ${getUserName()}!`} 
         />
         
-        <main className="container mx-auto px-6 py-8">
-          <div className="mb-10">
+        <main className="container mx-auto px-4 lg:px-6 py-4 lg:py-8">
+          <div className="mb-6 lg:mb-10">
             <DashboardStats />
           </div>
           
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
-            <div className="lg:col-span-2">
-              <ContractsList />
-            </div>
-            <div className="lg:col-span-1">
-              <RecentActivity />
-            </div>
-          </div>
-          
-          <div className="bg-white p-6 rounded-lg border border-gray-200">
-            <div className="flex flex-col md:flex-row items-center justify-between">
-              <div>
-                <h2 className="text-xl font-medium mb-2">
-                  Precisa de um novo contrato?
-                </h2>
-                <p className="text-gray-500">
-                  Crie contratos personalizados de forma rápida e simples
-                </p>
+          {isMobile ? (
+            // Mobile Layout
+            <>
+              <div className="mb-6">
+                <div className="bg-white p-4 lg:p-6 rounded-lg border border-gray-200">
+                  <div className="flex flex-col items-start gap-3">
+                    <div>
+                      <h2 className="text-lg font-medium mb-2">
+                        Precisa de um novo contrato?
+                      </h2>
+                      <p className="text-gray-500 text-sm">
+                        Crie contratos personalizados de forma rápida e simples
+                      </p>
+                    </div>
+                    <Link to="/dashboard/criar-contrato" className="w-full">
+                      <Button className="bg-brand-400 hover:bg-brand-500 w-full">
+                        Criar Contrato <ArrowRight className="ml-2 h-4 w-4" />
+                      </Button>
+                    </Link>
+                  </div>
+                </div>
               </div>
-              <Link to="/dashboard/criar-contrato" className="mt-4 md:mt-0">
-                <Button className="bg-brand-400 hover:bg-brand-500">
-                  Criar Contrato <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-              </Link>
-            </div>
-          </div>
+              
+              <div className="mb-6">
+                <ContractsList />
+              </div>
+              
+              <div>
+                <RecentActivity />
+              </div>
+            </>
+          ) : (
+            // Desktop Layout
+            <>
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+                <div className="lg:col-span-2">
+                  <ContractsList />
+                </div>
+                <div className="lg:col-span-1">
+                  <RecentActivity />
+                </div>
+              </div>
+              
+              <div className="bg-white p-6 rounded-lg border border-gray-200">
+                <div className="flex flex-col md:flex-row items-center justify-between">
+                  <div>
+                    <h2 className="text-xl font-medium mb-2">
+                      Precisa de um novo contrato?
+                    </h2>
+                    <p className="text-gray-500">
+                      Crie contratos personalizados de forma rápida e simples
+                    </p>
+                  </div>
+                  <Link to="/dashboard/criar-contrato" className="mt-4 md:mt-0">
+                    <Button className="bg-brand-400 hover:bg-brand-500">
+                      Criar Contrato <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+            </>
+          )}
         </main>
       </div>
     </div>
