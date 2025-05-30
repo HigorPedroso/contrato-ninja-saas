@@ -528,7 +528,10 @@ const ContractsList = () => {
             // Mobile loading skeleton
             <div className="space-y-4">
               {[...Array(3)].map((_, index) => (
-                <div key={index} className="border rounded-lg p-4 space-y-3">
+                <div
+                  key={index}
+                  className="border rounded-lg p-4 space-y-3 w-full max-w-full"
+                >
                   <Skeleton className="h-6 w-3/4" />
                   <Skeleton className="h-4 w-1/2" />
                   <Skeleton className="h-4 w-1/3" />
@@ -540,45 +543,47 @@ const ContractsList = () => {
               ))}
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Nome</TableHead>
-                  <TableHead>Tipo</TableHead>
-                  <TableHead>Cliente</TableHead>
-                  <TableHead>Data</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Ações</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {[...Array(4)].map((_, index) => (
-                  <TableRow key={index}>
-                    <TableCell>
-                      <Skeleton className="h-6 w-[200px]" />
-                    </TableCell>
-                    <TableCell>
-                      <Skeleton className="h-6 w-[100px]" />
-                    </TableCell>
-                    <TableCell>
-                      <Skeleton className="h-6 w-[140px]" />
-                    </TableCell>
-                    <TableCell>
-                      <Skeleton className="h-6 w-[80px]" />
-                    </TableCell>
-                    <TableCell>
-                      <Skeleton className="h-6 w-[80px]" />
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end space-x-2">
-                        <Skeleton className="h-8 w-8" />
-                        <Skeleton className="h-8 w-8" />
-                      </div>
-                    </TableCell>
+            <div className="overflow-x-auto">
+              <Table className="min-w-full">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Nome</TableHead>
+                    <TableHead>Tipo</TableHead>
+                    <TableHead>Cliente</TableHead>
+                    <TableHead>Data</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {[...Array(4)].map((_, index) => (
+                    <TableRow key={index}>
+                      <TableCell>
+                        <Skeleton className="h-6 w-[200px]" />
+                      </TableCell>
+                      <TableCell>
+                        <Skeleton className="h-6 w-[100px]" />
+                      </TableCell>
+                      <TableCell>
+                        <Skeleton className="h-6 w-[140px]" />
+                      </TableCell>
+                      <TableCell>
+                        <Skeleton className="h-6 w-[80px]" />
+                      </TableCell>
+                      <TableCell>
+                        <Skeleton className="h-6 w-[80px]" />
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end space-x-2">
+                          <Skeleton className="h-8 w-8" />
+                          <Skeleton className="h-8 w-8" />
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           )
         ) : contracts.length > 0 ? (
           isMobile ? (
@@ -589,91 +594,91 @@ const ContractsList = () => {
               ))}
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Nome</TableHead>
-                  <TableHead>Tipo</TableHead>
-                  <TableHead>Cliente</TableHead>
-                  <TableHead>Data</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Ações</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {contracts.map((contract) => (
-                  <TableRow key={contract.id}>
-                    <TableCell className="font-medium flex items-center">
-                      <FileText className="h-4 w-4 text-gray-400 mr-2 flex-shrink-0" />
-                      <span className="truncate max-w-[200px]">
-                        {contract.title}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      {contract.type}
-                      {isPremiumRestricted(contract.type) && (
-                        <span className="ml-2 text-xs text-amber-500 font-medium">
-                          (Premium)
+            <div className="overflow-x-auto">
+              <Table className="min-w-full">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Nome</TableHead>
+                    <TableHead>Tipo</TableHead>
+                    <TableHead>Cliente</TableHead>
+                    <TableHead>Data</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Ações</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {contracts.map((contract) => (
+                    <TableRow key={contract.id}>
+                      <TableCell className="font-medium flex items-center">
+                        <FileText className="h-4 w-4 text-gray-400 mr-2 flex-shrink-0" />
+                        <span className="truncate max-w-[200px]">
+                          {contract.title}
                         </span>
-                      )}
-                    </TableCell>
-                    <TableCell>{contract.client_name || "-"}</TableCell>
-                    <TableCell>{formatDate(contract.created_at)}</TableCell>
-                    <TableCell>
-                      <span
-                        className={`px-2 py-1 rounded-full text-xs ${getStatusDisplay(contract.status).classes}`}
-                      >
-                        {getStatusDisplay(contract.status).label}
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end space-x-2">
-                        {contract.status === "signed" ? (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={async () => {
-                              console.log(contract);
-                              const filePath =
-                                contract.client_signed_file_path ||
-                                contract.signed_file_path;
-                              if (!filePath) {
-                                toast({
-                                  title: "Erro ao baixar",
-                                  description:
-                                    "Arquivo assinado não encontrado",
-                                  variant: "destructive",
-                                });
-                                return;
-                              }
+                      </TableCell>
+                      <TableCell>
+                        {contract.type}
+                        {isPremiumRestricted(contract.type) && (
+                          <span className="ml-2 text-xs text-amber-500 font-medium">
+                            (Premium)
+                          </span>
+                        )}
+                      </TableCell>
+                      <TableCell>{contract.client_name || "-"}</TableCell>
+                      <TableCell>{formatDate(contract.created_at)}</TableCell>
+                      <TableCell>
+                        <span
+                          className={`px-2 py-1 rounded-full text-xs ${getStatusDisplay(contract.status).classes}`}
+                        >
+                          {getStatusDisplay(contract.status).label}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end space-x-2">
+                          {contract.status === "signed" ? (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={async () => {
+                                console.log(contract);
+                                const filePath =
+                                  contract.client_signed_file_path ||
+                                  contract.signed_file_path;
+                                if (!filePath) {
+                                  toast({
+                                    title: "Erro ao baixar",
+                                    description:
+                                      "Arquivo assinado não encontrado",
+                                    variant: "destructive",
+                                  });
+                                  return;
+                                }
 
-                              const { data, error } = await supabase.storage
-                                .from("signed-contracts")
-                                .download(filePath);
+                                const { data, error } = await supabase.storage
+                                  .from("signed-contracts")
+                                  .download(filePath);
 
-                              if (data) {
-                                const url = URL.createObjectURL(data);
-                                const a = document.createElement("a");
-                                a.href = url;
-                                a.download = `contrato-${contract.id}-assinado.pdf`;
-                                a.click();
-                                URL.revokeObjectURL(url);
-                              } else if (error) {
-                                toast({
-                                  title: "Erro ao baixar",
-                                  description:
-                                    "Não foi possível baixar o arquivo assinado",
-                                  variant: "destructive",
-                                });
-                              }
-                            }}
-                            title="Baixar contrato assinado"
-                            className="text-green-600"
-                          >
-                            <Download className="h-4 w-4" />
-                          </Button>
-                        ) : (
-                          <>
+                                if (data) {
+                                  const url = URL.createObjectURL(data);
+                                  const a = document.createElement("a");
+                                  a.href = url;
+                                  a.download = `contrato-${contract.id}-assinado.pdf`;
+                                  a.click();
+                                  URL.revokeObjectURL(url);
+                                } else if (error) {
+                                  toast({
+                                    title: "Erro ao baixar",
+                                    description:
+                                      "Não foi possível baixar o arquivo assinado",
+                                    variant: "destructive",
+                                  });
+                                }
+                              }}
+                              title="Baixar contrato assinado"
+                              className="text-green-600"
+                            >
+                              <Download className="h-4 w-4" />
+                            </Button>
+                          ) : (
                             <Button
                               variant="ghost"
                               size="icon"
@@ -682,22 +687,14 @@ const ContractsList = () => {
                             >
                               <Eye className="h-4 w-4" />
                             </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => downloadContract(contract.id)}
-                              title="Baixar contrato"
-                            >
-                              <Download className="h-4 w-4" />
-                            </Button>
-                          </>
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           )
         ) : (
           <div className="text-center py-8 lg:py-12">
