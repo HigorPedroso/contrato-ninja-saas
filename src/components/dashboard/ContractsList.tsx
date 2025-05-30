@@ -554,7 +554,6 @@ const ContractsList = () => {
       </div>
 
       <div className="p-4 lg:p-6">
-        <div className="overflow-x-auto">
           {isLoading ? (
             isMobile ? (
               // Mobile loading skeleton
@@ -809,7 +808,6 @@ const ContractsList = () => {
               </Link>
             </div>
           )}
-        </div>
       </div>
 
       {/* Dialog para visualizar o contrato */}
