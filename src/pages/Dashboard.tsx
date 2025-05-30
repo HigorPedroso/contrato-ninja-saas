@@ -23,7 +23,7 @@ const Dashboard = () => {
     if (user) {
       refreshProfile();
     }
-  }, [user, refreshProfile]);
+  }, [user]);
 
   const getUserName = () => {
     if (profile?.full_name) return profile.full_name.split(' ')[0];
