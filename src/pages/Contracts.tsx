@@ -2,8 +2,11 @@
 import Sidebar from "@/components/dashboard/Sidebar";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import ContractsList from "@/components/dashboard/ContractsList";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const Contracts = () => {
+  const isMobile = useIsMobile();
+
   return (
     <div className="min-h-screen bg-gray-50 flex">
       <Sidebar />
@@ -14,7 +17,7 @@ const Contracts = () => {
           description="Visualize e gerencie todos os seus contratos" 
         />
         
-        <main className="container mx-auto px-6 py-8">
+        <main className="container mx-auto px-4 lg:px-6 py-4 lg:py-8 pb-20 lg:pb-8">
           <ContractsList />
         </main>
       </div>
