@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import Sidebar from "@/components/dashboard/Sidebar";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
@@ -74,10 +73,8 @@ const Dashboard = () => {
                 </div>
               </div>
               
-              <div className="mb-6 overflow-x-auto sm:overflow-x-visible">
-              <div className="min-w-[600px]">
+              <div className="mb-6">
                 <ContractsList />
-                </div>
               </div>
               
               <div>
