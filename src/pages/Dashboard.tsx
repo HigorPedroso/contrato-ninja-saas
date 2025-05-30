@@ -74,9 +74,9 @@ const Dashboard = () => {
                 </div>
               </div>
               
-              <div className="mb-6">
+              {/* <div className="mb-6">
                 <ContractsList />
-              </div>
+              </div> */}
               
               <div>
                 <RecentActivity />
