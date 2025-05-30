@@ -55,9 +55,11 @@ import { PenLine, ExternalLink, Upload, AlertCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Resend } from "resend";
 import { ContractStatus, Contract } from "@/types/contract";
+import { downloadContract } from "@/services/contractList";
 
 const ContractsList = () => {
   const { trackActivity } = useActivity();
+  const isMobile = useIsMobile();
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedContract, setSelectedContract] = useState<any>(null);
@@ -111,163 +113,6 @@ const ContractsList = () => {
       toast({
         title: "Erro ao carregar contrato",
         description: "Não foi possível carregar os detalhes do contrato.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const downloadContract = async (contractId: string) => {
-    try {
-      const contractData = await fetchContractById(contractId);
-      if (!contractData) return;
-
-      console.log("Contract data for download:", contractData);
-
-      // Case 1: Contract with both signatures (client and user)
-      if (
-        contractData.status === "signed" &&
-        contractData.client_signed_file_path
-      ) {
-        const { data: finalFile, error: finalError } = await supabase.storage
-          .from("signed-contracts")
-          .download(contractData.client_signed_file_path);
-
-        if (finalFile && !finalError) {
-          const url = URL.createObjectURL(finalFile);
-          const a = document.createElement("a");
-          a.href = url;
-          a.download = `contrato-${contractData.id}-assinado-final.pdf`;
-          a.click();
-          URL.revokeObjectURL(url);
-          await trackActivity("download", contractId, contractData.title);
-          return;
-        }
-      }
-
-      // Case 2: Contract with one signature (user only)
-      if (contractData.signed_file_path) {
-        const { data: userSignedFile, error: userError } =
-          await supabase.storage
-            .from("signed-contracts")
-            .download(contractData.signed_file_path);
-
-        if (userSignedFile && !userError) {
-          const url = URL.createObjectURL(userSignedFile);
-          const a = document.createElement("a");
-          a.href = url;
-          a.download = `contrato-${contractData.id}-parcialmente-assinado.pdf`;
-          a.click();
-          URL.revokeObjectURL(url);
-          await trackActivity("download", contractId, contractData.title);
-          return;
-        }
-      }
-
-      // Case 3: Contract with no signatures (generate PDF from content)
-      const doc = new jsPDF();
-
-      // Configure PDF settings
-      doc.setFont("helvetica");
-      const pageWidth = doc.internal.pageSize.getWidth();
-      const margin = 20;
-      const lineHeight = 7;
-      let yPosition = 20;
-
-      // Add contract title
-      doc.setFontSize(16);
-      doc.text(contractData.title, pageWidth / 2, yPosition, {
-        align: "center",
-      });
-      yPosition += lineHeight * 2;
-
-      // Add client information if available
-      doc.setFontSize(12);
-      if (contractData.client_name) {
-        doc.text(`Cliente: ${contractData.client_name}`, margin, yPosition);
-        yPosition += lineHeight;
-      }
-      if (contractData.client_email) {
-        doc.text(`Email: ${contractData.client_email}`, margin, yPosition);
-        yPosition += lineHeight;
-      }
-      if (contractData.client_cpf) {
-        doc.text(`CPF: ${contractData.client_cpf}`, margin, yPosition);
-        yPosition += lineHeight;
-      }
-      if (contractData.client_address) {
-        doc.text(`Endereço: ${contractData.client_address}`, margin, yPosition);
-        yPosition += lineHeight;
-      }
-      doc.text(
-        `Data: ${formatDate(contractData.created_at)}`,
-        margin,
-        yPosition
-      );
-      yPosition += lineHeight * 2;
-
-      // Process HTML content
-      const tempDiv = document.createElement("div");
-      // Replace undefined values with placeholders or empty strings
-      const processedContent = contractData.content
-        .replace(
-          "undefined, inscrito(a)",
-          `${contractData.client_name || "[Nome do Designer]"}, inscrito(a)`
-        )
-        .replace("nº undefined", `nº ${contractData.client_cpf || "[CPF]"}`)
-        .replace(
-          "em undefined",
-          `em ${contractData.client_address || "[Endereço]"}`
-        );
-
-      tempDiv.innerHTML = processedContent;
-
-      // Convert HTML to formatted text
-      doc.setFontSize(11);
-      const processNode = (node: Node, indent = 0) => {
-        Array.from(node.childNodes).forEach((child) => {
-          if (child.nodeType === Node.TEXT_NODE) {
-            const text = child.textContent?.trim();
-            if (text) {
-              const lines = doc.splitTextToSize(text, pageWidth - 2 * margin);
-              lines.forEach((line) => {
-                if (yPosition > doc.internal.pageSize.getHeight() - margin) {
-                  doc.addPage();
-                  yPosition = margin;
-                }
-                doc.text(line, margin + indent, yPosition);
-                yPosition += lineHeight;
-              });
-            }
-          } else if (child.nodeType === Node.ELEMENT_NODE) {
-            const element = child as HTMLElement;
-            if (element.tagName === "STRONG" || element.tagName === "B") {
-              doc.setFont("helvetica", "bold");
-              processNode(child, indent);
-              doc.setFont("helvetica", "normal");
-            } else if (element.tagName === "BR" || element.tagName === "P") {
-              yPosition += lineHeight;
-            } else {
-              processNode(child, indent);
-            }
-          }
-        });
-      };
-
-      processNode(tempDiv);
-
-      // Save the PDF
-      doc.save(`contrato-${contractData.id}.pdf`);
-      await trackActivity("download", contractId, contractData.title);
-
-      toast({
-        title: "Download concluído",
-        description: "O contrato foi baixado com sucesso.",
-      });
-    } catch (error) {
-      console.error("Erro ao gerar PDF:", error);
-      toast({
-        title: "Erro ao baixar contrato",
-        description: "Não foi possível gerar o PDF do contrato.",
         variant: "destructive",
       });
     }
@@ -623,6 +468,74 @@ const ContractsList = () => {
     return statusConfig[status] || statusConfig[ContractStatus.DRAFT];
   };
 
+  const ContractCard = ({ contract }: { contract: Contract }) => (
+    <div className="bg-white rounded-lg border border-gray-200 p-4 mb-4">
+      <div className="flex justify-between items-start mb-3">
+        <div className="flex items-start space-x-2">
+          <FileText className="h-4 w-4 text-gray-400 mt-1" />
+          <div>
+            <h3 className="font-medium">{contract.title}</h3>
+            <p className="text-sm text-gray-500">{contract.type}</p>
+          </div>
+        </div>
+        <span className={`px-2 py-1 rounded-full text-xs ${getStatusDisplay(contract.status).classes}`}>
+          {getStatusDisplay(contract.status).label}
+        </span>
+      </div>
+      
+      <div className="space-y-2 mb-4">
+        <p className="text-sm">
+          <span className="text-gray-500">Cliente:</span> {contract.client_name || "-"}
+        </p>
+        <p className="text-sm">
+          <span className="text-gray-500">Data:</span> {formatDate(contract.created_at)}
+        </p>
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        {contract.status === "signed" ? (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => downloadContract(contract.id)}
+            className="flex-1"
+          >
+            <Download className="h-4 w-4 mr-2" /> Baixar Assinado
+          </Button>
+        ) : (
+          <>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => viewContract(contract.id)}
+              className="flex-1"
+            >
+              <Eye className="h-4 w-4 mr-2" /> Visualizar
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => downloadContract(contract.id)}
+              className="flex-1"
+            >
+              <Download className="h-4 w-4 mr-2" /> Baixar
+            </Button>
+          </>
+        )}
+        {canAddSignature(contract) && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handleSignatureClick(contract)}
+            className="flex-1"
+          >
+            <PenLine className="h-4 w-4 mr-2" /> Assinar
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+
   return (
     <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
       <div className="p-6 border-b border-gray-200 flex justify-between items-center">
@@ -639,9 +552,25 @@ const ContractsList = () => {
         </Link>
       </div>
 
-      <div className="p-6">
+      <div className="p-4 lg:p-6">
         <div className="overflow-x-auto">
           {isLoading ? (
+            isMobile ? (
+              // Mobile loading skeleton
+              <div className="space-y-4">
+                {[...Array(3)].map((_, index) => (
+                  <div key={index} className="border rounded-lg p-4 space-y-3">
+                    <Skeleton className="h-6 w-3/4" />
+                    <Skeleton className="h-4 w-1/2" />
+                    <Skeleton className="h-4 w-1/3" />
+                    <div className="flex gap-2 pt-2">
+                      <Skeleton className="h-8 flex-1" />
+                      <Skeleton className="h-8 flex-1" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
             <Table>
               <TableHeader>
                 <TableRow>
@@ -681,7 +610,16 @@ const ContractsList = () => {
                 ))}
               </TableBody>
             </Table>
+            )
           ) : contracts.length > 0 ? (
+            isMobile ? (
+              // Mobile contracts list
+              <div className="space-y-4">
+                {contracts.map((contract) => (
+                  <ContractCard key={contract.id} contract={contract} />
+                ))}
+              </div>
+            ) : (
             <Table>
               <TableHeader>
                 <TableRow>
@@ -853,8 +791,9 @@ const ContractsList = () => {
                 ))}
               </TableBody>
             </Table>
+            )
           ) : (
-            <div className="text-center py-12">
+            <div className="text-center py-8 lg:py-12">
               <FileText className="h-12 w-12 text-gray-300 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-1">
                 Nenhum contrato encontrado
