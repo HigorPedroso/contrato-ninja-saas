@@ -56,6 +56,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Resend } from "resend";
 import { ContractStatus, Contract } from "@/types/contract";
 import { downloadContract } from "@/services/contractList";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const ContractsList = () => {
   const { trackActivity } = useActivity();
