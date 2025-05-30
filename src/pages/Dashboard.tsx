@@ -74,9 +74,9 @@ const Dashboard = () => {
                 </div>
               </div>
               
-              {/* <div className="mb-6">
+              <div className="mb-6 overflow-x-auto">
                 <ContractsList />
-              </div> */}
+              </div>
               
               <div>
                 <RecentActivity />
