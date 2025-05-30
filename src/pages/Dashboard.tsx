@@ -75,7 +75,9 @@ const Dashboard = () => {
               </div>
               
               <div className="mb-6 overflow-x-auto sm:overflow-x-visible">
+              <div className="min-w-[600px]">
                 <ContractsList />
+                </div>
               </div>
               
               <div>
