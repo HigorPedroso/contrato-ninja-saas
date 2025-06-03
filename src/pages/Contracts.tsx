@@ -25,13 +25,13 @@ const Contracts = () => {
             description="Visualize e gerencie todos os seus contratos"
           />
         </div>
-        <main
+        {/* <main
           className={`flex-1 w-full max-w-full ${
             isMobile ? "px-2 py-4 pb-24" : "container mx-auto sm:px-4 lg:px-6 py-4 lg:py-8 pb-20 lg:pb-8"
           }`}
-        >
+        > */}
           <ContractsList />
-        </main>
+        {/* </main> */}
       </div>
     </div>
   );
