@@ -15,23 +15,7 @@ const Contracts = () => {
   return (
     <div className="min-h-screen bg-gray-50 flex">
       {/* Sidebar */}
-      {isMobile ? (
-        <>
-          <MobileSidebar isOpen={isSidebarOpen} toggleSidebar={toggleSidebar}>
-            <Sidebar />
-          </MobileSidebar>
-          {/* Botão de menu/hambúrguer */}
-          <button
-            className="fixed top-4 left-4 z-40 bg-white p-2 rounded-md shadow-md lg:hidden"
-            onClick={toggleSidebar}
-            aria-label="Abrir menu"
-          >
-            <Menu className="h-6 w-6 text-gray-700" />
-          </button>
-        </>
-      ) : (
         <Sidebar />
-      )}
 
       {/* Main Content */}
       <div className={`flex-1 flex flex-col ${!isMobile ? "lg:ml-64" : ""}`}>
