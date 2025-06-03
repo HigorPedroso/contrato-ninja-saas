@@ -42,7 +42,7 @@ const formSchema = z.object({
   title: z.string().min(3, {
     message: "O título deve ter pelo menos 3 caracteres",
   }),
-  templateId: z.string(),
+  templateId: z.string().min(1, { message: "Selecione um modelo de contrato" }),
   clientName: z.string().optional(),
   clientEmail: z
     .string()
@@ -269,7 +269,7 @@ const ContractForm = () => {
   MaskedInput.displayName = "MaskedInput";
 
   return (
-    <Card className="p-6">
+    <Card className="p-6 mb-24">
       {limitReached ? (
         <div className="text-center p-8">
           <h2 className="text-2xl font-medium text-gray-900 mb-4">
@@ -308,46 +308,42 @@ const ContractForm = () => {
             />
 
             <FormField
-              control={form.control}
-              name="templateId"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Modelo de Contrato</FormLabel>
-                  <Select
-                    onValueChange={(value) => {
-                      field.onChange(value);
-                      handleTemplateChange(value);
-                    }}
-                    value={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione um modelo" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="create_new">Criar do zero</SelectItem>
-                      <SelectItem value="freelancer">
-                        Contrato de Freelancer
-                      </SelectItem>
-                      <SelectItem value="design">Contrato de Design</SelectItem>
-                      <SelectItem value="consulting">
-                        Contrato de Consultoria
-                      </SelectItem>
-                      {templates.map((template) => (
-                        <SelectItem key={template.id} value={template.id}>
-                          {template.title}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+  control={form.control}
+  name="templateId"
+  render={({ field }) => (
+    <FormItem>
+      <FormLabel>Modelo de Contrato</FormLabel>
+      <Select
+        onValueChange={(value) => {
+          field.onChange(value);
+          handleTemplateChange(value);
+        }}
+        value={field.value}
+      >
+        <FormControl>
+          <SelectTrigger>
+            <SelectValue placeholder="Selecione um modelo" />
+          </SelectTrigger>
+        </FormControl>
+        <SelectContent>
+          <SelectItem value="create_new">Criar do zero</SelectItem>
+          <SelectItem value="freelancer">Contrato de Freelancer</SelectItem>
+          <SelectItem value="design">Contrato de Design</SelectItem>
+          <SelectItem value="consulting">Contrato de Consultoria</SelectItem>
+          {templates.map((template) => (
+            <SelectItem key={template.id} value={template.id}>
+              {template.title}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <FormMessage />
+    </FormItem>
+  )}
+/>
 
             {isFreelancerContract ? (
-              <div className="grid sm:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
                   name="contractorName"
@@ -355,17 +351,12 @@ const ContractForm = () => {
                     <FormItem>
                       <FormLabel>Nome do Contratante</FormLabel>
                       <FormControl>
-                        <Input
-                          required
-                          placeholder="Nome completo"
-                          {...field}
-                        />
+                        <Input required placeholder="Nome completo" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-
                 <FormField
                   control={form.control}
                   name="contractorAddress"
@@ -373,11 +364,7 @@ const ContractForm = () => {
                     <FormItem>
                       <FormLabel>Endereço do Contratante</FormLabel>
                       <FormControl>
-                        <Input
-                          required
-                          placeholder="Endereço completo"
-                          {...field}
-                        />
+                        <Input required placeholder="Endereço completo" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -586,7 +573,7 @@ const ContractForm = () => {
                   control={form.control}
                   name="serviceDescription"
                   render={({ field }) => (
-                    <FormItem className="col-span-2">
+                    <FormItem className="col-span-1 md:col-span-2">
                       <FormLabel>Descrição do Serviço</FormLabel>
                       <FormControl>
                         <Textarea
@@ -605,7 +592,7 @@ const ContractForm = () => {
                   control={form.control}
                   name="additionalClauses"
                   render={({ field }) => (
-                    <FormItem className="col-span-2">
+                    <FormItem className="col-span-1 md:col-span-2">
                       <FormLabel>Cláusulas Adicionais (opcional)</FormLabel>
                       <FormControl>
                         <Textarea
@@ -867,7 +854,7 @@ const ContractForm = () => {
                   control={form.control}
                   name="serviceDescription"
                   render={({ field }) => (
-                    <FormItem className="col-span-2">
+                    <FormItem className="col-span-1 md:col-span-2">
                       <FormLabel>Descrição do Serviço</FormLabel>
                       <FormControl>
                         <Textarea

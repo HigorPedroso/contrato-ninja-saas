@@ -1,11 +1,10 @@
-
 import { useEffect, useState } from "react";
 import Sidebar from "@/components/dashboard/Sidebar";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import DashboardStats from "@/components/dashboard/DashboardStats";
 import RecentActivity from "@/components/dashboard/RecentActivity";
 import ContractsList from "@/components/dashboard/ContractsList";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -13,12 +12,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { useGoogleAds } from "@/hooks/useGoogleAds";
 import { useIsMobile } from "@/hooks/use-mobile";
 
-
 const Dashboard = () => {
   const { user, profile, refreshProfile } = useAuth();
   const { trackConversion } = useGoogleAds();
   const isMobile = useIsMobile();
-  
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
   // Garantir que o perfil do usuário esteja atualizado
   useEffect(() => {
     if (user) {
@@ -34,28 +33,35 @@ const Dashboard = () => {
 
   useEffect(() => {
     trackConversion('NejPCIvNgswaELyn48kD');
-  })
+  }, [trackConversion]);
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
-      <Sidebar />
-      
-      <div className="flex-1 lg:ml-64">
-        <DashboardHeader 
-          title="Dashboard" 
-          description={`Bem-vindo de volta, ${getUserName()}!`} 
-        />
-        
-        <main className="container mx-auto px-4 lg:px-6 py-4 lg:py-8">
-          <div className="mb-6 lg:mb-10">
+      {/* Sidebar */}
+        <Sidebar />
+
+      <div className={`flex-1 flex flex-col ${!isMobile ? "lg:ml-64" : ""}`}>
+        <div className={isMobile ? "px-2 pt-4" : "px-4 pt-4 lg:px-6"}>
+          <DashboardHeader
+            title="Dashboard"
+            description={`Bem-vindo de volta, ${getUserName()}!`}
+          />
+        </div>
+        <main
+          className={
+            isMobile
+              ? "flex-1 w-full px-2 py-4 pb-24"
+              : "container mx-auto px-4 lg:px-6 py-4 lg:py-8 pb-20 lg:pb-8"
+          }
+        >
+          <div className={isMobile ? "mb-4" : "mb-6 lg:mb-10"}>
             <DashboardStats />
           </div>
-          
+
           {isMobile ? (
-            // Mobile Layout
             <>
               <div className="mb-6">
-                <div className="bg-white p-4 lg:p-6 rounded-lg border border-gray-200">
+                <div className="bg-white p-4 rounded-lg border border-gray-200">
                   <div className="flex flex-col items-start gap-3">
                     <div>
                       <h2 className="text-lg font-medium mb-2">
@@ -73,19 +79,16 @@ const Dashboard = () => {
                   </div>
                 </div>
               </div>
-              
-              <div className="mb-6 overflow-x-auto sm:overflow-x-visible">
-              <div className="min-w-[600px]">
+
+              <div className="mb-6">
                 <ContractsList />
-                </div>
               </div>
-              
+
               <div>
                 <RecentActivity />
               </div>
             </>
           ) : (
-            // Desktop Layout
             <>
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
                 <div className="lg:col-span-2">
@@ -95,7 +98,7 @@ const Dashboard = () => {
                   <RecentActivity />
                 </div>
               </div>
-              
+
               <div className="bg-white p-6 rounded-lg border border-gray-200">
                 <div className="flex flex-col md:flex-row items-center justify-between">
                   <div>
