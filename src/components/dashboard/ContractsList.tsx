@@ -70,7 +70,10 @@ const ContractsList = () => {
   const [showPremiumAlert, setShowPremiumAlert] = useState(false);
   const navigate = useNavigate();
 
+  console.log(isMobile);
+
   useEffect(() => {
+    console.log(isMobile);
     const loadContracts = async () => {
       setIsLoading(true);
       const data = await fetchUserContracts();
@@ -634,12 +637,30 @@ const ContractsList = () => {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end space-x-2">
-                          {contract.status === "signed" ? (
+                          {/* Botão Visualizar */}
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => viewContract(contract.id)}
+                            title="Visualizar contrato"
+                          >
+                            <Eye className="h-4 w-4 text-gray-700" />
+                          </Button>
+                          {/* Botão Baixar */}
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => downloadContract(contract.id)}
+                            title="Baixar contrato"
+                          >
+                            <Download className="h-4 w-4 text-blue-600" />
+                          </Button>
+                          {/* Botão Baixar Assinado */}
+                          {contract.status === "signed" && (
                             <Button
                               variant="ghost"
                               size="icon"
                               onClick={async () => {
-                                console.log(contract);
                                 const filePath =
                                   contract.client_signed_file_path ||
                                   contract.signed_file_path;
@@ -652,7 +673,6 @@ const ContractsList = () => {
                                   });
                                   return;
                                 }
-
                                 const { data, error } = await supabase.storage
                                   .from("signed-contracts")
                                   .download(filePath);
@@ -674,18 +694,19 @@ const ContractsList = () => {
                                 }
                               }}
                               title="Baixar contrato assinado"
-                              className="text-green-600"
                             >
-                              <Download className="h-4 w-4" />
+                              <Download className="h-4 w-4 text-green-600" />
                             </Button>
-                          ) : (
+                          )}
+                          {/* Botão Assinar */}
+                          {canAddSignature(contract) && (
                             <Button
                               variant="ghost"
                               size="icon"
-                              onClick={() => viewContract(contract.id)}
-                              title="Visualizar contrato"
+                              onClick={() => handleSignatureClick(contract)}
+                              title="Solicitar assinatura"
                             >
-                              <Eye className="h-4 w-4" />
+                              <PenLine className="h-4 w-4 text-amber-600" />
                             </Button>
                           )}
                         </div>
