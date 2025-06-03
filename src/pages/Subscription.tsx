@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import Sidebar from "@/components/dashboard/Sidebar";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
@@ -270,7 +269,7 @@ const SubscriptionPage = () => {
           description="Escolha o plano ideal para as suas necessidades"
         />
         
-        <main className="container mx-auto px-6 py-8">
+        <main className="container mx-auto px-6 py-8 mb-24">
           {/* Status da assinatura */}
           <Card className="p-6 mb-8 bg-white">
             <h2 className="text-lg font-medium mb-4">Status da sua assinatura</h2>
