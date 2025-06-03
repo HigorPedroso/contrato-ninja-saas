@@ -41,9 +41,9 @@ const Contracts = () => {
             description="Visualize e gerencie todos os seus contratos"
           />
         </div>
-        <main className="flex-1 container mx-auto px-2 sm:px-4 lg:px-6 py-4 lg:py-8 pb-20 lg:pb-8">
+        {/* <main className="flex-1 container mx-auto px-2 sm:px-4 lg:px-6 py-4 lg:py-8 pb-20 lg:pb-8">
           <ContractsList />
-        </main>
+        </main> */}
       </div>
     </div>
   );
