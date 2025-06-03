@@ -1166,15 +1166,142 @@ const ContractForm = () => {
                 />
               </div>
             ) : (
-              <>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                  {/* campos */}
-                </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <FormField
+                  control={form.control}
+                  name="clientName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Nome do Cliente</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Nome completo" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="clientEmail"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Email do Cliente</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="email"
+                          placeholder="email@exemplo.com"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="startDate"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Data de Início</FormLabel>
+                      <FormControl>
+                        <Input required type="date" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="deliveryDate"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Data de Entrega</FormLabel>
+                      <FormControl>
+                        <Input required type="date" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="amount"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Valor (R$)</FormLabel>
+                      <FormControl>
+                        <Input
+                          required
+                          placeholder="0,00"
+                          {...field}
+                          onChange={(e) =>
+                            field.onChange(currencyMask(e.target.value))
+                          }
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="paymentMethod"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Forma de Pagamento</FormLabel>
+                      <FormControl>
+                        <Input
+                          required
+                          placeholder="PIX, Transferência, etc"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="paymentOption"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Opção de Pagamento</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione a forma de pagamento" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="full">À vista</SelectItem>
+                          <SelectItem value="split_2">
+                            50% início e 50% final
+                          </SelectItem>
+                          <SelectItem value="split_3">3 parcelas</SelectItem>
+                          <SelectItem value="split_custom">
+                            Mais parcelas
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
                 <FormField
                   control={form.control}
                   name="content"
                   render={({ field }) => (
-                    <FormItem>
+                    <FormItem className="col-span-2">
                       <FormLabel>Conteúdo do Contrato</FormLabel>
                       <FormControl>
                         <Textarea
@@ -1187,7 +1314,7 @@ const ContractForm = () => {
                     </FormItem>
                   )}
                 />
-              </>
+              </div>
             )}
 
             <Button
