@@ -269,7 +269,7 @@ const ContractForm = () => {
   MaskedInput.displayName = "MaskedInput";
 
   return (
-    <Card className="p-6">
+    <Card className="p-4 sm:p-6 w-full max-w-lg mx-auto mb-24">
       {limitReached ? (
         <div className="text-center p-8">
           <h2 className="text-2xl font-medium text-gray-900 mb-4">
@@ -280,7 +280,7 @@ const ContractForm = () => {
               "Você atingiu o limite de 3 contratos por mês no plano gratuito."}
           </p>
           <Button
-            className="bg-brand-400 hover:bg-brand-500"
+            className="bg-brand-400 hover:bg-brand-500 w-full"
             onClick={() => navigate("/dashboard/assinatura")}
           >
             Assinar Plano Premium
@@ -288,7 +288,7 @@ const ContractForm = () => {
         </div>
       ) : (
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 px-1 sm:px-0">
             <FormField
               control={form.control}
               name="title"
@@ -1190,7 +1190,11 @@ const ContractForm = () => {
               </>
             )}
 
-            <Button type="submit" disabled={isSubmitting}>
+            <Button
+              type="submit"
+              disabled={isSubmitting}
+              className="w-full"
+            >
               {isSubmitting ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
