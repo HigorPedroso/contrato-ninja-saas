@@ -262,41 +262,6 @@ const ContractsList = () => {
     }
   };
 
-  // Update signature dialog to handle LibreSign
-  const handleSignatureRequest = async (contract: Contract) => {
-    try {
-      // Generate document hash
-      const documentHash = SHA256(contract.content).toString();
-
-      // Initialize signature request
-      const signatureUrl = await initializeSignature({
-        contractId: contract.id,
-        documentHash,
-        signerEmail,
-        contractTitle: contract.title,
-        callbackUrl: `${window.location.origin}/api/signature-callback`,
-      });
-
-      // Update contract status
-      await handleStatusUpdate(contract.id, "active");
-
-      toast({
-        title: "Solicitação de assinatura enviada",
-        description:
-          "Um email será enviado para o signatário com as instruções.",
-      });
-
-      setSignatureDialog(false);
-    } catch (error) {
-      console.error("Error requesting signature:", error);
-      toast({
-        title: "Erro na solicitação",
-        description: "Não foi possível iniciar o processo de assinatura.",
-        variant: "destructive",
-      });
-    }
-  };
-
   // Add new states
   const [signedFile, setSignedFile] = useState<File | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -395,15 +360,15 @@ const ContractsList = () => {
 
       // Update contract maintaining current status if it's already active
       const { error: updateError } = await supabase
-  .from("contracts")
-  .update({
-    status: 'signed', // Change to signed when client uploads
-    client_signed_file_path: data.path, // Changed from signed_file_path
-    client_signed_at: new Date().toISOString(), // Add signed timestamp
-    signer_ip: signerIp,
-    client_email: clientEmail
-  })
-  .eq("id", selectedContract.id);
+        .from("contracts")
+        .update({
+          status: "signed", // Change to signed when client uploads
+          client_signed_file_path: data.path, // Changed from signed_file_path
+          client_signed_at: new Date().toISOString(), // Add signed timestamp
+          signer_ip: signerIp,
+          client_email: clientEmail,
+        })
+        .eq("id", selectedContract.id);
 
       if (updateError) throw updateError;
 
@@ -482,17 +447,21 @@ const ContractsList = () => {
             <p className="text-sm text-gray-500">{contract.type}</p>
           </div>
         </div>
-        <span className={`px-2 py-1 rounded-full text-xs ${getStatusDisplay(contract.status).classes}`}>
+        <span
+          className={`px-2 py-1 rounded-full text-xs ${getStatusDisplay(contract.status).classes}`}
+        >
           {getStatusDisplay(contract.status).label}
         </span>
       </div>
-      
+
       <div className="space-y-2 mb-4">
         <p className="text-sm">
-          <span className="text-gray-500">Cliente:</span> {contract.client_name || "-"}
+          <span className="text-gray-500">Cliente:</span>{" "}
+          {contract.client_name || "-"}
         </p>
         <p className="text-sm">
-          <span className="text-gray-500">Data:</span> {formatDate(contract.created_at)}
+          <span className="text-gray-500">Data:</span>{" "}
+          {formatDate(contract.created_at)}
         </p>
       </div>
 
@@ -541,7 +510,7 @@ const ContractsList = () => {
   );
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+    <div className="bg-white rounded-lg border border-gray-200 overflow-hidden w-full max-w-full">
       <div className="p-6 border-b border-gray-200 flex justify-between items-center">
         <div>
           <h2 className="text-xl font-medium">Meus Contratos</h2>
@@ -668,12 +637,30 @@ const ContractsList = () => {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end space-x-2">
-                          {contract.status === "signed" ? (
+                          {/* Botão Visualizar */}
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => viewContract(contract.id)}
+                            title="Visualizar contrato"
+                          >
+                            <Eye className="h-4 w-4 text-gray-700" />
+                          </Button>
+                          {/* Botão Baixar */}
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => downloadContract(contract.id)}
+                            title="Baixar contrato"
+                          >
+                            <Download className="h-4 w-4 text-blue-600" />
+                          </Button>
+                          {/* Botão Baixar Assinado */}
+                          {contract.status === "signed" && (
                             <Button
                               variant="ghost"
                               size="icon"
                               onClick={async () => {
-                                console.log(contract);
                                 const filePath =
                                   contract.client_signed_file_path ||
                                   contract.signed_file_path;
@@ -686,7 +673,6 @@ const ContractsList = () => {
                                   });
                                   return;
                                 }
-
                                 const { data, error } = await supabase.storage
                                   .from("signed-contracts")
                                   .download(filePath);
@@ -708,18 +694,19 @@ const ContractsList = () => {
                                 }
                               }}
                               title="Baixar contrato assinado"
-                              className="text-green-600"
                             >
-                              <Download className="h-4 w-4" />
+                              <Download className="h-4 w-4 text-green-600" />
                             </Button>
-                          ) : (
+                          )}
+                          {/* Botão Assinar */}
+                          {canAddSignature(contract) && (
                             <Button
                               variant="ghost"
                               size="icon"
                               onClick={() => handleSignatureClick(contract)}
                               title="Solicitar assinatura"
                             >
-                              <Eye className="h-4 w-4" />
+                              <PenLine className="h-4 w-4 text-amber-600" />
                             </Button>
                           )}
                         </div>
