@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { ChevronLeft, ChevronRight, Mail, Lock, UserPlus, LogIn, ArrowRight } from "lucide-react";
 import Footer from "@/components/Footer";
+import Navbar from "@/components/Navbar";
 
 const BENEFITS = [
   {
@@ -105,19 +106,12 @@ const Login = () => {
   return (
     <>
       <div className="min-h-screen flex flex-col bg-gradient-to-b from-brand-50 to-white">
-        {/* Mobile header */}
-        <div className="flex items-center justify-between px-4 pt-6 pb-2 md:hidden">
-          <img src="/logo.svg" alt="Contrato Ninja" className="h-8" />
-          <Link to="/registro">
-            <Button variant="outline" className="gap-2 border-brand-400 text-brand-400 hover:bg-brand-50">
-              <UserPlus className="h-4 w-4" /> Criar conta
-            </Button>
-          </Link>
-        </div>
+        {/* Navbar global */}
+        <Navbar />
 
         {/* Carousel de benefícios */}
-        <div className="flex-1 flex flex-col items-center justify-center px-4">
-          <div className="w-full max-w-xs mx-auto mb-6">
+        <div className="flex-1 flex flex-col items-center justify-center px-4 mt-6 mb-6">
+          <div className="w-full max-w-xs md:max-w-md lg:max-w-lg mx-auto mb-8">
             <div className="relative bg-white rounded-xl shadow-lg p-5 text-center border border-gray-100">
               <div className="flex items-center justify-center mb-2">
                 {BENEFITS[carousel].icon}
@@ -144,7 +138,7 @@ const Login = () => {
           </div>
 
           {/* Card de login */}
-          <Card className="w-full max-w-xs mx-auto shadow-xl border-0">
+          <Card className="w-full max-w-xs md:max-w-md lg:max-w-lg mx-auto shadow-xl border-0 mb-8">
             <CardHeader className="text-center">
               <CardTitle className="text-2xl font-bold text-brand-400">Entrar</CardTitle>
             </CardHeader>
@@ -189,7 +183,7 @@ const Login = () => {
                 onClick={handleGoogleLogin}
                 type="button"
               >
-                <img src="/google.svg" alt="" className="h-5 w-5" />
+                <img src="/google.png" alt="" className="h-5 w-5" />
                 Entrar com Google
               </Button>
             </CardContent>
