@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import {
   FileText,
@@ -435,42 +436,42 @@ const ContractsList = () => {
   };
 
   const ContractCard = ({ contract }: { contract: Contract }) => (
-    <div className="bg-white rounded-lg border border-gray-200 p-4 mb-4">
+    <div className="bg-white rounded-lg border border-gray-200 p-3 mb-3 w-full max-w-full overflow-hidden">
       <div className="flex justify-between items-start mb-3">
-        <div className="flex items-start space-x-2">
-          <FileText className="h-4 w-4 text-gray-400 mt-1" />
-          <div>
-            <h3 className="font-medium">{contract.title}</h3>
-            <p className="text-sm text-gray-500">{contract.type}</p>
+        <div className="flex items-start space-x-2 min-w-0 flex-1">
+          <FileText className="h-4 w-4 text-gray-400 mt-1 flex-shrink-0" />
+          <div className="min-w-0 flex-1">
+            <h3 className="font-medium text-sm leading-tight truncate">{contract.title}</h3>
+            <p className="text-xs text-gray-500 mt-1">{contract.type}</p>
           </div>
         </div>
         <span
-          className={`px-2 py-1 rounded-full text-xs ${getStatusDisplay(contract.status).classes}`}
+          className={`px-2 py-1 rounded-full text-xs flex-shrink-0 ml-2 ${getStatusDisplay(contract.status).classes}`}
         >
           {getStatusDisplay(contract.status).label}
         </span>
       </div>
 
-      <div className="space-y-2 mb-4">
-        <p className="text-sm">
+      <div className="space-y-1 mb-3">
+        <p className="text-xs">
           <span className="text-gray-500">Cliente:</span>{" "}
-          {contract.client_name || "-"}
+          <span className="break-words">{contract.client_name || "-"}</span>
         </p>
-        <p className="text-sm">
+        <p className="text-xs">
           <span className="text-gray-500">Data:</span>{" "}
           {formatDate(contract.created_at)}
         </p>
       </div>
 
-      <div className="flex flex-wrap gap-2">
+      <div className="grid grid-cols-2 gap-2">
         {contract.status === "signed" ? (
           <Button
             variant="outline"
             size="sm"
             onClick={() => downloadContract(contract.id)}
-            className="flex-1"
+            className="text-xs h-8"
           >
-            <Download className="h-4 w-4 mr-2" /> Baixar Assinado
+            <Download className="h-3 w-3 mr-1" /> Baixar
           </Button>
         ) : (
           <>
@@ -478,17 +479,17 @@ const ContractsList = () => {
               variant="outline"
               size="sm"
               onClick={() => viewContract(contract.id)}
-              className="flex-1"
+              className="text-xs h-8"
             >
-              <Eye className="h-4 w-4 mr-2" /> Visualizar
+              <Eye className="h-3 w-3 mr-1" /> Ver
             </Button>
             <Button
               variant="outline"
               size="sm"
               onClick={() => downloadContract(contract.id)}
-              className="flex-1"
+              className="text-xs h-8"
             >
-              <Download className="h-4 w-4 mr-2" /> Baixar
+              <Download className="h-3 w-3 mr-1" /> Baixar
             </Button>
           </>
         )}
@@ -497,9 +498,9 @@ const ContractsList = () => {
             variant="outline"
             size="sm"
             onClick={() => handleSignatureClick(contract)}
-            className="flex-1"
+            className="text-xs h-8 col-span-2"
           >
-            <PenLine className="h-4 w-4 mr-2" /> Assinar
+            <PenLine className="h-3 w-3 mr-1" /> Assinar
           </Button>
         )}
       </div>
@@ -507,37 +508,37 @@ const ContractsList = () => {
   );
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 overflow-hidden w-full max-w-full">
-      <div className="p-6 border-b border-gray-200 flex justify-between items-center">
-        <div>
-          <h2 className="text-xl font-medium">Meus Contratos</h2>
-          <p className="text-gray-500">
+    <div className="bg-white rounded-lg border border-gray-200 overflow-hidden w-full">
+      <div className={`${isMobile ? 'p-3' : 'p-6'} border-b border-gray-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3`}>
+        <div className="w-full sm:w-auto">
+          <h2 className={`${isMobile ? 'text-lg' : 'text-xl'} font-medium`}>Meus Contratos</h2>
+          <p className={`text-gray-500 ${isMobile ? 'text-sm' : ''}`}>
             Visualize e gerencie todos os seus contratos
           </p>
         </div>
-        <Link to="/dashboard/criar-contrato">
-          <Button className="bg-brand-400 hover:bg-brand-500">
+        <Link to="/dashboard/criar-contrato" className="w-full sm:w-auto">
+          <Button className={`bg-brand-400 hover:bg-brand-500 w-full sm:w-auto ${isMobile ? 'text-sm h-9' : ''}`}>
             Novo Contrato
           </Button>
         </Link>
       </div>
 
-      <div className="p-4 lg:p-6">
+      <div className={isMobile ? 'p-3' : 'p-4 lg:p-6'}>
         {isLoading ? (
           isMobile ? (
             // Mobile loading skeleton
-            <div className="space-y-4">
+            <div className="space-y-3">
               {[...Array(3)].map((_, index) => (
                 <div
                   key={index}
-                  className="border rounded-lg p-4 space-y-3 w-full max-w-full"
+                  className="border rounded-lg p-3 space-y-2 w-full"
                 >
-                  <Skeleton className="h-6 w-3/4" />
+                  <Skeleton className="h-5 w-3/4" />
                   <Skeleton className="h-4 w-1/2" />
                   <Skeleton className="h-4 w-1/3" />
-                  <div className="flex gap-2 pt-2">
-                    <Skeleton className="h-8 flex-1" />
-                    <Skeleton className="h-8 flex-1" />
+                  <div className="grid grid-cols-2 gap-2 pt-2">
+                    <Skeleton className="h-8" />
+                    <Skeleton className="h-8" />
                   </div>
                 </div>
               ))}
@@ -587,8 +588,8 @@ const ContractsList = () => {
           )
         ) : contracts.length > 0 ? (
           isMobile ? (
-            // Mobile contracts list
-            <div className="space-y-4">
+            // Mobile contracts list - optimized for small screens
+            <div className="space-y-3 max-w-full overflow-hidden">
               {contracts.map((contract) => (
                 <ContractCard key={contract.id} contract={contract} />
               ))}
@@ -697,16 +698,16 @@ const ContractsList = () => {
             </div>
           )
         ) : (
-          <div className="text-center py-8 lg:py-12">
-            <FileText className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-1">
+          <div className={`text-center ${isMobile ? 'py-6' : 'py-8 lg:py-12'}`}>
+            <FileText className={`${isMobile ? 'h-10 w-10' : 'h-12 w-12'} text-gray-300 mx-auto mb-4`} />
+            <h3 className={`${isMobile ? 'text-base' : 'text-lg'} font-medium text-gray-900 mb-1`}>
               Nenhum contrato encontrado
             </h3>
-            <p className="text-gray-500 mb-4">
+            <p className={`text-gray-500 mb-4 ${isMobile ? 'text-sm px-4' : ''}`}>
               Você ainda não possui contratos criados.
             </p>
             <Link to="/dashboard/criar-contrato">
-              <Button className="bg-brand-400 hover:bg-brand-500">
+              <Button className={`bg-brand-400 hover:bg-brand-500 ${isMobile ? 'text-sm h-9 mx-4' : ''}`}>
                 Criar meu primeiro contrato
               </Button>
             </Link>
