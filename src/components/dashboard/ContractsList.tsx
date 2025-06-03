@@ -507,7 +507,7 @@ const ContractsList = () => {
   );
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+    <div className="bg-white rounded-lg border border-gray-200 overflow-hidden w-full max-w-full">
       <div className="p-6 border-b border-gray-200 flex justify-between items-center">
         <div>
           <h2 className="text-xl font-medium">Meus Contratos</h2>
