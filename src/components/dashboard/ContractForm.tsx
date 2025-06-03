@@ -42,7 +42,7 @@ const formSchema = z.object({
   title: z.string().min(3, {
     message: "O título deve ter pelo menos 3 caracteres",
   }),
-  templateId: z.string(),
+  templateId: z.string().min(1, { message: "Selecione um modelo de contrato" }), // <-- Torna obrigatório
   clientName: z.string().optional(),
   clientEmail: z
     .string()
