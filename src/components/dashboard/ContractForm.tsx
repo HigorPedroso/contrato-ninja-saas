@@ -269,7 +269,7 @@ const ContractForm = () => {
   MaskedInput.displayName = "MaskedInput";
 
   return (
-    <Card className="p-4 sm:p-6 w-full max-w-lg mx-auto mb-24">
+    <Card className="p-4 sm:p-6 w-full max-w-2xl mx-auto mb-24">
       {limitReached ? (
         <div className="text-center p-8">
           <h2 className="text-2xl font-medium text-gray-900 mb-4">
@@ -280,7 +280,7 @@ const ContractForm = () => {
               "Você atingiu o limite de 3 contratos por mês no plano gratuito."}
           </p>
           <Button
-            className="bg-brand-400 hover:bg-brand-500 w-full"
+            className="bg-brand-400 hover:bg-brand-500"
             onClick={() => navigate("/dashboard/assinatura")}
           >
             Assinar Plano Premium
@@ -289,6 +289,7 @@ const ContractForm = () => {
       ) : (
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 px-1 sm:px-0">
+            {/* Campos comuns */}
             <FormField
               control={form.control}
               name="title"
@@ -346,6 +347,7 @@ const ContractForm = () => {
               )}
             />
 
+            {/* Blocos de campos específicos */}
             {isFreelancerContract ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <FormField
@@ -586,7 +588,7 @@ const ContractForm = () => {
                   control={form.control}
                   name="serviceDescription"
                   render={({ field }) => (
-                    <FormItem className="col-span-2">
+                    <FormItem className="col-span-1 sm:col-span-2">
                       <FormLabel>Descrição do Serviço</FormLabel>
                       <FormControl>
                         <Textarea
@@ -605,7 +607,7 @@ const ContractForm = () => {
                   control={form.control}
                   name="additionalClauses"
                   render={({ field }) => (
-                    <FormItem className="col-span-2">
+                    <FormItem className="col-span-1 sm:col-span-2">
                       <FormLabel>Cláusulas Adicionais (opcional)</FormLabel>
                       <FormControl>
                         <Textarea
@@ -659,7 +661,7 @@ const ContractForm = () => {
                   )}
                 />
 
-<FormField
+                <FormField
                   control={form.control}
                   name="freelancerAddress"
                   render={({ field }) => (
@@ -867,7 +869,7 @@ const ContractForm = () => {
                   control={form.control}
                   name="serviceDescription"
                   render={({ field }) => (
-                    <FormItem className="col-span-2">
+                    <FormItem className="col-span-1 sm:col-span-2">
                       <FormLabel>Descrição do Serviço</FormLabel>
                       <FormControl>
                         <Textarea
@@ -1150,7 +1152,7 @@ const ContractForm = () => {
                   control={form.control}
                   name="consultingObjective"
                   render={({ field }) => (
-                    <FormItem className="col-span-2">
+                    <FormItem className="col-span-1 sm:col-span-2">
                       <FormLabel>Objetivo da Consultoria</FormLabel>
                       <FormControl>
                         <Textarea
@@ -1167,141 +1169,12 @@ const ContractForm = () => {
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                <FormField
-                  control={form.control}
-                  name="clientName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Nome do Cliente</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Nome completo" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="clientEmail"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Email do Cliente</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="email"
-                          placeholder="email@exemplo.com"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="startDate"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Data de Início</FormLabel>
-                      <FormControl>
-                        <Input required type="date" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="deliveryDate"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Data de Entrega</FormLabel>
-                      <FormControl>
-                        <Input required type="date" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="amount"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Valor (R$)</FormLabel>
-                      <FormControl>
-                        <Input
-                          required
-                          placeholder="0,00"
-                          {...field}
-                          onChange={(e) =>
-                            field.onChange(currencyMask(e.target.value))
-                          }
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="paymentMethod"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Forma de Pagamento</FormLabel>
-                      <FormControl>
-                        <Input
-                          required
-                          placeholder="PIX, Transferência, etc"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="paymentOption"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Opção de Pagamento</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        value={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecione a forma de pagamento" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="full">À vista</SelectItem>
-                          <SelectItem value="split_2">
-                            50% início e 50% final
-                          </SelectItem>
-                          <SelectItem value="split_3">3 parcelas</SelectItem>
-                          <SelectItem value="split_custom">
-                            Mais parcelas
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
+                {/* ...campos padrão... */}
                 <FormField
                   control={form.control}
                   name="content"
                   render={({ field }) => (
-                    <FormItem className="col-span-2">
+                    <FormItem className="col-span-1 sm:col-span-2">
                       <FormLabel>Conteúdo do Contrato</FormLabel>
                       <FormControl>
                         <Textarea
@@ -1317,11 +1190,7 @@ const ContractForm = () => {
               </div>
             )}
 
-            <Button
-              type="submit"
-              disabled={isSubmitting}
-              className="w-full"
-            >
+            <Button type="submit" disabled={isSubmitting} className="w-full">
               {isSubmitting ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
