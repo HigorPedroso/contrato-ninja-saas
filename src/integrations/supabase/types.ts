@@ -9,68 +9,6 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      activities: {
-        Row: {
-          contract_id: string
-          contract_name: string
-          created_at: string
-          id: string
-          type: string
-          user_id: string
-        }
-        Insert: {
-          contract_id: string
-          contract_name: string
-          created_at?: string
-          id?: string
-          type: string
-          user_id: string
-        }
-        Update: {
-          contract_id?: string
-          contract_name?: string
-          created_at?: string
-          id?: string
-          type?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "activities_contract_id_fkey"
-            columns: ["contract_id"]
-            isOneToOne: false
-            referencedRelation: "contracts"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      authors: {
-        Row: {
-          created_at: string | null
-          id: string
-          image_url: string | null
-          name: string
-          slug: string
-          updated_at: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          id?: string
-          image_url?: string | null
-          name: string
-          slug: string
-          updated_at?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          id?: string
-          image_url?: string | null
-          name?: string
-          slug?: string
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
       blog_post_tags: {
         Row: {
           post_id: string
@@ -104,14 +42,11 @@ export type Database = {
       blog_posts: {
         Row: {
           author_id: string | null
-          author_slug: string | null
-          category: string | null
           content: string
           created_at: string
           excerpt: string | null
           featured_image: string | null
           id: string
-          meta_description: string | null
           published: boolean | null
           published_at: string | null
           slug: string
@@ -120,14 +55,11 @@ export type Database = {
         }
         Insert: {
           author_id?: string | null
-          author_slug?: string | null
-          category?: string | null
           content: string
           created_at?: string
           excerpt?: string | null
           featured_image?: string | null
           id?: string
-          meta_description?: string | null
           published?: boolean | null
           published_at?: string | null
           slug: string
@@ -136,14 +68,11 @@ export type Database = {
         }
         Update: {
           author_id?: string | null
-          author_slug?: string | null
-          category?: string | null
           content?: string
           created_at?: string
           excerpt?: string | null
           featured_image?: string | null
           id?: string
-          meta_description?: string | null
           published?: boolean | null
           published_at?: string | null
           slug?: string
@@ -158,45 +87,7 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "blog_posts_author_slug_fkey"
-            columns: ["author_slug"]
-            isOneToOne: false
-            referencedRelation: "authors"
-            referencedColumns: ["slug"]
-          },
-          {
-            foreignKeyName: "blog_posts_category_fkey"
-            columns: ["category"]
-            isOneToOne: false
-            referencedRelation: "categories"
-            referencedColumns: ["slug"]
-          },
         ]
-      }
-      categories: {
-        Row: {
-          created_at: string | null
-          id: string
-          name: string
-          slug: string
-          updated_at: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          id?: string
-          name: string
-          slug: string
-          updated_at?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          id?: string
-          name?: string
-          slug?: string
-          updated_at?: string | null
-        }
-        Relationships: []
       }
       contract_templates: {
         Row: {
@@ -205,7 +96,6 @@ export type Database = {
           description: string | null
           id: string
           is_premium: boolean
-          is_public: boolean | null
           template_type: string
           title: string
           updated_at: string
@@ -216,7 +106,6 @@ export type Database = {
           description?: string | null
           id?: string
           is_premium?: boolean
-          is_public?: boolean | null
           template_type: string
           title: string
           updated_at?: string
@@ -227,7 +116,6 @@ export type Database = {
           description?: string | null
           id?: string
           is_premium?: boolean
-          is_public?: boolean | null
           template_type?: string
           title?: string
           updated_at?: string
@@ -239,19 +127,10 @@ export type Database = {
           amount: number | null
           client_email: string | null
           client_name: string | null
-          client_signed_at: string | null
-          client_signed_file_path: string | null
           content: string
           created_at: string
           end_date: string | null
           id: string
-          is_signed: boolean | null
-          signature_status: string | null
-          signature_type: string | null
-          signed_at: string | null
-          signed_file_path: string | null
-          signer_info: Json | null
-          signer_ip: string | null
           start_date: string | null
           status: Database["public"]["Enums"]["contract_status"]
           template_id: string | null
@@ -263,19 +142,10 @@ export type Database = {
           amount?: number | null
           client_email?: string | null
           client_name?: string | null
-          client_signed_at?: string | null
-          client_signed_file_path?: string | null
           content: string
           created_at?: string
           end_date?: string | null
           id?: string
-          is_signed?: boolean | null
-          signature_status?: string | null
-          signature_type?: string | null
-          signed_at?: string | null
-          signed_file_path?: string | null
-          signer_info?: Json | null
-          signer_ip?: string | null
           start_date?: string | null
           status?: Database["public"]["Enums"]["contract_status"]
           template_id?: string | null
@@ -287,19 +157,10 @@ export type Database = {
           amount?: number | null
           client_email?: string | null
           client_name?: string | null
-          client_signed_at?: string | null
-          client_signed_file_path?: string | null
           content?: string
           created_at?: string
           end_date?: string | null
           id?: string
-          is_signed?: boolean | null
-          signature_status?: string | null
-          signature_type?: string | null
-          signed_at?: string | null
-          signed_file_path?: string | null
-          signer_info?: Json | null
-          signer_ip?: string | null
           start_date?: string | null
           status?: Database["public"]["Enums"]["contract_status"]
           template_id?: string | null
@@ -429,57 +290,36 @@ export type Database = {
       profiles: {
         Row: {
           company_name: string | null
-          cpf: string | null
           created_at: string
           email: string | null
           full_name: string | null
-          govbr_security_level: string | null
-          govbr_verified: boolean | null
           id: string
-          legal_name: string | null
           phone: string | null
-          stripe_customer_id: string | null
-          stripe_subscription_id: string | null
           subscription_expires_at: string | null
           subscription_plan: Database["public"]["Enums"]["subscription_plan"]
           updated_at: string
-          verified_phone: string | null
         }
         Insert: {
           company_name?: string | null
-          cpf?: string | null
           created_at?: string
           email?: string | null
           full_name?: string | null
-          govbr_security_level?: string | null
-          govbr_verified?: boolean | null
           id: string
-          legal_name?: string | null
           phone?: string | null
-          stripe_customer_id?: string | null
-          stripe_subscription_id?: string | null
           subscription_expires_at?: string | null
           subscription_plan?: Database["public"]["Enums"]["subscription_plan"]
           updated_at?: string
-          verified_phone?: string | null
         }
         Update: {
           company_name?: string | null
-          cpf?: string | null
           created_at?: string
           email?: string | null
           full_name?: string | null
-          govbr_security_level?: string | null
-          govbr_verified?: boolean | null
           id?: string
-          legal_name?: string | null
           phone?: string | null
-          stripe_customer_id?: string | null
-          stripe_subscription_id?: string | null
           subscription_expires_at?: string | null
           subscription_plan?: Database["public"]["Enums"]["subscription_plan"]
           updated_at?: string
-          verified_phone?: string | null
         }
         Relationships: []
       }
@@ -513,7 +353,7 @@ export type Database = {
       }
     }
     Enums: {
-      contract_status: "draft" | "active" | "expired" | "canceled" | "signed"
+      contract_status: "draft" | "active" | "expired" | "canceled"
       subscription_plan: "free" | "basic" | "premium"
     }
     CompositeTypes: {
@@ -630,7 +470,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      contract_status: ["draft", "active", "expired", "canceled", "signed"],
+      contract_status: ["draft", "active", "expired", "canceled"],
       subscription_plan: ["free", "basic", "premium"],
     },
   },

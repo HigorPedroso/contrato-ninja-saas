@@ -42,7 +42,7 @@ const formSchema = z.object({
   title: z.string().min(3, {
     message: "O título deve ter pelo menos 3 caracteres",
   }),
-  templateId: z.string().min(1, { message: "Selecione um modelo de contrato" }), // <-- Torna obrigatório
+  templateId: z.string(),
   clientName: z.string().optional(),
   clientEmail: z
     .string()
@@ -269,7 +269,7 @@ const ContractForm = () => {
   MaskedInput.displayName = "MaskedInput";
 
   return (
-    <Card className="w-full max-w-2xl mx-auto p-4 sm:p-6 mb-24">
+    <Card className="p-6">
       {limitReached ? (
         <div className="text-center p-8">
           <h2 className="text-2xl font-medium text-gray-900 mb-4">
@@ -288,11 +288,7 @@ const ContractForm = () => {
         </div>
       ) : (
         <Form {...form}>
-          <form
-            onSubmit={form.handleSubmit(onSubmit)}
-            className="space-y-6 px-2 sm:px-0"
-          >
-            {/* Campo: Título */}
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             <FormField
               control={form.control}
               name="title"
@@ -311,7 +307,6 @@ const ContractForm = () => {
               )}
             />
 
-            {/* Campo: Modelo de Contrato */}
             <FormField
               control={form.control}
               name="templateId"
@@ -351,9 +346,8 @@ const ContractForm = () => {
               )}
             />
 
-            {/* Campos dinâmicos conforme o modelo selecionado */}
             {isFreelancerContract ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <div className="grid sm:grid-cols-2 gap-6">
                 <FormField
                   control={form.control}
                   name="contractorName"
@@ -592,7 +586,7 @@ const ContractForm = () => {
                   control={form.control}
                   name="serviceDescription"
                   render={({ field }) => (
-                    <FormItem className="col-span-1 sm:col-span-2">
+                    <FormItem className="col-span-2">
                       <FormLabel>Descrição do Serviço</FormLabel>
                       <FormControl>
                         <Textarea
@@ -611,7 +605,7 @@ const ContractForm = () => {
                   control={form.control}
                   name="additionalClauses"
                   render={({ field }) => (
-                    <FormItem className="col-span-1 sm:col-span-2">
+                    <FormItem className="col-span-2">
                       <FormLabel>Cláusulas Adicionais (opcional)</FormLabel>
                       <FormControl>
                         <Textarea
@@ -626,7 +620,7 @@ const ContractForm = () => {
                 />
               </div>
             ) : isDesignContract ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <div className="grid sm:grid-cols-2 gap-6">
                 <FormField
                   control={form.control}
                   name="freelancerName"
@@ -665,7 +659,7 @@ const ContractForm = () => {
                   )}
                 />
 
-                <FormField
+<FormField
                   control={form.control}
                   name="freelancerAddress"
                   render={({ field }) => (
@@ -873,7 +867,7 @@ const ContractForm = () => {
                   control={form.control}
                   name="serviceDescription"
                   render={({ field }) => (
-                    <FormItem className="col-span-1 sm:col-span-2">
+                    <FormItem className="col-span-2">
                       <FormLabel>Descrição do Serviço</FormLabel>
                       <FormControl>
                         <Textarea
@@ -889,7 +883,7 @@ const ContractForm = () => {
                 />
               </div>
             ) : isConsultingContract ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <div className="grid sm:grid-cols-2 gap-6">
                 <FormField
                   control={form.control}
                   name="companyName"
@@ -1156,7 +1150,7 @@ const ContractForm = () => {
                   control={form.control}
                   name="consultingObjective"
                   render={({ field }) => (
-                    <FormItem className="col-span-1 sm:col-span-2">
+                    <FormItem className="col-span-2">
                       <FormLabel>Objetivo da Consultoria</FormLabel>
                       <FormControl>
                         <Textarea
@@ -1172,13 +1166,15 @@ const ContractForm = () => {
                 />
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                {/* ...campos padrão... */}
+              <>
+                <div className="grid sm:grid-cols-2 gap-6">
+                  {/* Default contract fields */}
+                </div>
                 <FormField
                   control={form.control}
                   name="content"
                   render={({ field }) => (
-                    <FormItem className="col-span-1 sm:col-span-2">
+                    <FormItem>
                       <FormLabel>Conteúdo do Contrato</FormLabel>
                       <FormControl>
                         <Textarea
@@ -1191,11 +1187,10 @@ const ContractForm = () => {
                     </FormItem>
                   )}
                 />
-              </div>
+              </>
             )}
 
-            {/* Botão de submit */}
-            <Button type="submit" disabled={isSubmitting} className="w-full">
+            <Button type="submit" disabled={isSubmitting}>
               {isSubmitting ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />

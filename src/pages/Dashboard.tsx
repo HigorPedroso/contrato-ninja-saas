@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import Sidebar from "@/components/dashboard/Sidebar";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
@@ -23,7 +24,7 @@ const Dashboard = () => {
     if (user) {
       refreshProfile();
     }
-  }, [user]);
+  }, [user, refreshProfile]);
 
   const getUserName = () => {
     if (profile?.full_name) return profile.full_name.split(' ')[0];
