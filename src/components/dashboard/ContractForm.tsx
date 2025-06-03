@@ -347,7 +347,7 @@ const ContractForm = () => {
             />
 
             {isFreelancerContract ? (
-              <div className="grid sm:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <FormField
                   control={form.control}
                   name="contractorName"
@@ -620,7 +620,7 @@ const ContractForm = () => {
                 />
               </div>
             ) : isDesignContract ? (
-              <div className="grid sm:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <FormField
                   control={form.control}
                   name="freelancerName"
@@ -883,7 +883,7 @@ const ContractForm = () => {
                 />
               </div>
             ) : isConsultingContract ? (
-              <div className="grid sm:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <FormField
                   control={form.control}
                   name="companyName"
@@ -1167,7 +1167,7 @@ const ContractForm = () => {
               </div>
             ) : (
               <>
-                <div className="grid sm:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   {/* Default contract fields */}
                 </div>
                 <FormField
