@@ -269,7 +269,7 @@ const ContractForm = () => {
   MaskedInput.displayName = "MaskedInput";
 
   return (
-    <Card className="p-4 sm:p-6 w-full max-w-2xl mx-auto mb-24">
+    <Card className="w-full max-w-2xl mx-auto p-4 sm:p-6 mb-24">
       {limitReached ? (
         <div className="text-center p-8">
           <h2 className="text-2xl font-medium text-gray-900 mb-4">
@@ -288,8 +288,11 @@ const ContractForm = () => {
         </div>
       ) : (
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 px-1 sm:px-0">
-            {/* Campos comuns */}
+          <form
+            onSubmit={form.handleSubmit(onSubmit)}
+            className="space-y-6 px-2 sm:px-0"
+          >
+            {/* Campo: Título */}
             <FormField
               control={form.control}
               name="title"
@@ -308,6 +311,7 @@ const ContractForm = () => {
               )}
             />
 
+            {/* Campo: Modelo de Contrato */}
             <FormField
               control={form.control}
               name="templateId"
@@ -347,7 +351,7 @@ const ContractForm = () => {
               )}
             />
 
-            {/* Blocos de campos específicos */}
+            {/* Campos dinâmicos conforme o modelo selecionado */}
             {isFreelancerContract ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <FormField
@@ -1190,6 +1194,7 @@ const ContractForm = () => {
               </div>
             )}
 
+            {/* Botão de submit */}
             <Button type="submit" disabled={isSubmitting} className="w-full">
               {isSubmitting ? (
                 <>
