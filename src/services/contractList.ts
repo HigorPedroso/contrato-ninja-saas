@@ -91,7 +91,7 @@ export const downloadContract = async (contractId: string) => {
         yPosition += lineHeight;
       }
       doc.text(
-        `Data: ${formatDate(contractData.created_at)}`,
+        `Data: ${contractData.created_at ? formatDate(contractData.created_at) : "Data não informada"}`,
         margin,
         yPosition
       );
