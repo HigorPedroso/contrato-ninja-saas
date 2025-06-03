@@ -32,7 +32,7 @@ const Contracts = () => {
               : "flex-1 container mx-auto sm:px-4 lg:px-6 py-4 lg:py-8 pb-20 lg:pb-8"
           }
         >
-          <ContractsList />
+          
         </main>
       </div>
     </div>
