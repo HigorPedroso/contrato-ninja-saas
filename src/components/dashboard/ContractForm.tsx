@@ -1168,7 +1168,7 @@ const ContractForm = () => {
             ) : (
               <>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                  {/* Default contract fields */}
+                  {/* campos */}
                 </div>
                 <FormField
                   control={form.control}
